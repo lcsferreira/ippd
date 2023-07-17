@@ -115,35 +115,33 @@ int evaluateMove(GameState state, int player, int depth, int alpha, int beta) {
 
     int numPieces = getNumPieces(state, player);
 
-    #pragma omp parallel for shared(state) reduction(max:bestScore) reduction(min:bestScore)
+    // Gerar todos os movimentos possíveis para o jogador atual
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
             if (state.board[i][j] == player) {
                 // Gerar todos os movimentos possíveis para uma peça
-                // ...
+                int numMoves = generateMoves(state, i, j, player); // Função para gerar movimentos possíveis
+
                 for (int k = 0; k < numMoves; k++) {
+                    int newRow, newCol; // Variáveis para armazenar as coordenadas do movimento
+
+                    // Obter as coordenadas do movimento atual
+                    getMoveCoordinates(state, i, j, k, &newRow, &newCol); // Função para obter as coordenadas do movimento
+
                     // Realizar o movimento
-                    // ...
                     makeMove(&state, i, j, newRow, newCol, player);
 
                     int score = evaluateMove(state, (player == PLAYER_PIECE) ? AI_PIECE : PLAYER_PIECE, depth - 1, alpha, beta);
 
                     if (player == AI_PIECE) {
-                        #pragma omp critical
-                        {
-                            bestScore = (score > bestScore) ? score : bestScore;
-                            alpha = (bestScore > alpha) ? bestScore : alpha;
-                        }
+                        bestScore = (score > bestScore) ? score : bestScore;
+                        alpha = (bestScore > alpha) ? bestScore : alpha;
                     } else {
-                        #pragma omp critical
-                        {
-                            bestScore = (score < bestScore) ? score : bestScore;
-                            beta = (bestScore < beta) ? bestScore : beta;
-                        }
+                        bestScore = (score < bestScore) ? score : bestScore;
+                        beta = (bestScore < beta) ? bestScore : beta;
                     }
 
                     // Desfazer o movimento
-                    // ...
                     undoMove(&state, i, j, newRow, newCol, player);
 
                     // Realizar a poda alfa-beta
@@ -164,29 +162,30 @@ GameState findBestMove(GameState state, int player, int depth) {
 
     int numPieces = getNumPieces(state, player);
 
-    #pragma omp parallel for shared(state) reduction(max:bestScore)
+    // Gerar todos os movimentos possíveis para o jogador atual
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
             if (state.board[i][j] == player) {
                 // Gerar todos os movimentos possíveis para uma peça
-                // ...
+                int numMoves = generateMoves(state, i, j, player); // Função para gerar movimentos possíveis
+
                 for (int k = 0; k < numMoves; k++) {
+                    int newRow, newCol; // Variáveis para armazenar as coordenadas do movimento
+
+                    // Obter as coordenadas do movimento atual
+                    getMoveCoordinates(state, i, j, k, &newRow, &newCol); // Função para obter as coordenadas do movimento
+
                     // Realizar o movimento
-                    // ...
                     makeMove(&state, i, j, newRow, newCol, player);
 
                     int score = evaluateMove(state, (player == PLAYER_PIECE) ? AI_PIECE : PLAYER_PIECE, depth - 1, -1000, 1000);
 
                     if (score > bestScore) {
-                        #pragma omp critical
-                        {
-                            bestScore = score;
-                            bestMove = state;
-                        }
+                        bestScore = score;
+                        bestMove = state;
                     }
 
                     // Desfazer o movimento
-                    // ...
                     undoMove(&state, i, j, newRow, newCol, player);
                 }
             }
@@ -195,6 +194,7 @@ GameState findBestMove(GameState state, int player, int depth) {
 
     return bestMove;
 }
+
 
 int isGameOver(GameState state) {
     // Verificar se o jogador humano venceu
