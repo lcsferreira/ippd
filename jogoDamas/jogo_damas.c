@@ -11,6 +11,21 @@
 #define PLAYER_PIECE_VALUE 1
 #define AI_PIECE_VALUE -1
 
+// Declaraçao de todas as funçoes
+int generateMoves(GameState state, int row, int col, int player);
+void getMoveCoordinates(GameState state, int row, int col, int moveIndex, int* newRow, int* newCol);
+int evaluateBoard(GameState state);
+int isMoveValid(GameState state, int row, int col, int newRow, int newCol, int player);
+int getNumPieces(GameState state, int player);
+void makeMove(GameState* state, int row, int col, int newRow, int newCol, int player);
+void undoMove(GameState* state, int row, int col, int newRow, int newCol, int player);
+int evaluateMove(GameState state, int player, int depth, int alpha, int beta);
+GameState findBestMove(GameState state, int player, int depth);
+int isGameOver(GameState state);
+void printBoard(GameState state);
+void playGame();
+
+
 typedef struct {
     int board[BOARD_SIZE][BOARD_SIZE];
 } GameState;
