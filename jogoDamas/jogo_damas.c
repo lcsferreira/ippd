@@ -1,5 +1,5 @@
-// #include "/usr/local/opt/libomp/include/omp.h"
-#include <omp.h>
+#include "/usr/local/opt/libomp/include/omp.h"
+// #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +39,11 @@ void inicializaTabuleiro(int **tabuleiro, int n);
 void imprimeTabuleiro(int **tabuleiro, int n);
 int **criaTabuleiro(int n);
 Game initGame();
+int evaluateGame(Game game);
+Move searchBestMove(Game game);
+int minimax(Game game, int depth, int isMaximizingPlayer, int alpha, int beta, int currentPlayer, int opponentPlayer);
+int verifyValidMoveNoPrint(Game game, Move move);
+
 
 int **criaTabuleiro(int n) {
   int **tabuleiro = (int **)malloc(n * sizeof(int *));
@@ -92,18 +97,10 @@ int evaluateGame(Game game) {
       if (game.tabuleiro[i][j] == PLAYER1) {
         player1Score += 5; // Give a base score for each piece
 
-        if (currentPlayer == PLAYER1 && i == SIZE - 1) {
-          player1Score += 10; // Give extra points for reaching the opponent's back row (king)
-        }
-
         // Give higher scores for pieces closer to the opponent's side
         player1Score += (currentPlayer == PLAYER1) ? SIZE - i : i;
       } else if (game.tabuleiro[i][j] == PLAYER2) {
         player2Score += 5; // Give a base score for each piece
-
-        if (currentPlayer == PLAYER2 && i == 0) {
-          player2Score += 10; // Give extra points for reaching the opponent's back row (king)
-        }
 
         // Give higher scores for pieces closer to the opponent's side
         player2Score += (currentPlayer == PLAYER2) ? i : SIZE - i;
@@ -122,8 +119,8 @@ int evaluateGame(Game game) {
 Move searchBestMove(Game game) {
   int maxScore = INT_MIN;
   Move bestMove;
-  int currentPlayer = game.currentPlayer;
-  int opponentPlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
+  int currentPlayer = PLAYER2;
+  int opponentPlayer = PLAYER1;
 
 #pragma omp parallel for collapse(2) num_threads(MAX_THREADS)
   for (int i = 0; i < SIZE; i++) {
@@ -136,10 +133,15 @@ Move searchBestMove(Game game) {
             int newY = j + dy;
             Move move = {i, j, newX, newY};
 
-            if (verifyValidMove(game, move)) {
-              Game newGame = game;
+            if (verifyValidMoveNoPrint(game, move) == 1) {
+            //   printf("Jogador %d moveu a peca de [%d][%d] para [%d][%d]\n", game.currentPlayer, move.x, move.y, move.newX, move.newY);
+              Game newGame;
+              newGame.tabuleiro = criaTabuleiro(SIZE);
+              newGame.currentPlayer = currentPlayer;
+              memcpy(newGame.tabuleiro[0], game.tabuleiro[0], SIZE * SIZE * sizeof(int));
               makeMove(newGame, move);
-              int score = minimax(newGame, MAX_MOVES, 0, INT_MIN, INT_MAX, currentPlayer, opponentPlayer);
+              int score = minimax(newGame, 1, 0, INT_MIN, INT_MAX, currentPlayer, opponentPlayer);
+              free(newGame.tabuleiro);
 #pragma omp critical
               {
                 if (score > maxScore) {
@@ -174,8 +176,10 @@ int minimax(Game game, int depth, int isMaximizingPlayer, int alpha, int beta, i
               int newY = j + dy;
               Move move = {i, j, newX, newY};
 
-              if (verifyValidMove(game, move)) {
-                Game newGame = game;
+              if (verifyValidMoveNoPrint(game, move) == 1) {
+                Game newGame;
+                newGame.tabuleiro = criaTabuleiro(SIZE);
+                newGame.currentPlayer = currentPlayer;
                 makeMove(newGame, move);
                 int score = minimax(newGame, depth - 1, 0, alpha, beta, currentPlayer, opponentPlayer);
                 maxScore = (score > maxScore) ? score : maxScore;
@@ -200,8 +204,10 @@ int minimax(Game game, int depth, int isMaximizingPlayer, int alpha, int beta, i
               int newY = j + dy;
               Move move = {i, j, newX, newY};
 
-              if (verifyValidMove(game, move)) {
-                Game newGame = game;
+              if (verifyValidMoveNoPrint(game, move) == 1) {
+                Game newGame;
+                newGame.tabuleiro = criaTabuleiro(SIZE);
+                newGame.currentPlayer = currentPlayer;
                 makeMove(newGame, move);
                 int score = minimax(newGame, depth - 1, 1, alpha, beta, currentPlayer, opponentPlayer);
                 minScore = (score < minScore) ? score : minScore;
@@ -275,6 +281,56 @@ int verifyValidMove(Game game, Move move) {
   return 1;
 }
 
+int verifyValidMoveNoPrint(Game game, Move move){
+    int currentPlayer = game.currentPlayer;
+
+  // Check if the move is inside the matrix bounds
+  if (move.x < 0 || move.x >= SIZE || move.y < 0 || move.y >= SIZE ||
+      move.newX < 0 || move.newX >= SIZE || move.newY < 0 || move.newY >= SIZE) {
+    
+    return 0;
+  }
+
+  // Check if the piece is moving forward (player 1) or backward (player 2)
+  if ((currentPlayer == PLAYER1 && move.newX < move.x) || (currentPlayer == PLAYER2 && move.newX > move.x)) {
+    
+    return 0;
+  }
+
+  // Check if the destination position is empty
+  if (game.tabuleiro[move.newX][move.newY] == 1 && game.currentPlayer == 1) {
+    
+    return 0;
+  }
+  if (game.tabuleiro[move.newX][move.newY] == 2 && game.currentPlayer == 2) {
+    
+    return 0;
+  }
+
+  // Check if the move is diagonal and in front
+  if (abs(move.x - move.newX) != 1 || abs(move.y - move.newY) != 1) {
+    // Check if the move is capturing an opponent's piece
+    if (abs(move.x - move.newX) == 2 && abs(move.y - move.newY) == 2) {
+      int capturedX = (move.x + move.newX) / 2;
+      int capturedY = (move.y + move.newY) / 2;
+      int capturedPiece = game.tabuleiro[capturedX][capturedY];
+
+      if (capturedPiece == currentPlayer || capturedPiece == 0) {
+        
+        return 0;
+      } else {
+        game.tabuleiro[capturedX][capturedY] = 0; // Remove the captured piece
+        return 1;
+      }
+    }
+    
+    return 0;
+  }
+
+  // All checks passed, move is valid
+  return 1;
+}
+
 void makeMove(Game game, Move move) {
   game.tabuleiro[move.newX][move.newY] = game.tabuleiro[move.x][move.y];
   game.tabuleiro[move.x][move.y] = 0;
@@ -284,7 +340,7 @@ void makeMove(Game game, Move move) {
   if (move.x - move.newX == -2 || move.y - move.newY == -2) {
     game.tabuleiro[move.x + 1][move.y + 1] = 0;
   }
-  printf("Jogador %d moveu a peca de [%d][%d] para [%d][%d]\n", game.currentPlayer, move.x, move.y, move.newX, move.newY);
+//   printf("Jogador %d moveu a peca de [%d][%d] para [%d][%d]\n", game.currentPlayer, move.x, move.y, move.newX, move.newY);
 }
 
 void verifyWinner(Game game) {
@@ -317,25 +373,24 @@ void verifyWinner(Game game) {
 
 void playGame(Game game) {
   int i = 0;
-  int opcao;
+  int opcao, isValid;
   while (i < MAX_MOVES) {
     if (game.currentPlayer == PLAYER2) {
+      imprimeTabuleiro(game.tabuleiro, SIZE);
       Move bestMove = searchBestMove(game);
-      makeMove(game, bestMove);
-      if (game.currentPlayer == 1) {
-        game.currentPlayer = PLAYER2;
-      } else {
+        printf("Jogada do computador: "
+            "de [%d][%d] para [%d][%d]\n",
+            bestMove.x, bestMove.y, bestMove.newX, bestMove.newY);
+        makeMove(game, bestMove);
         game.currentPlayer = PLAYER1;
-      }
-      verifyWinner(game);
-      i++;
+        verifyWinner(game);
+        i++;
     } else {
       opcao = menu();
       switch (opcao) {
       case 1:
         printf("Jogador %d\n", game.currentPlayer);
         Move move;
-        int isValid;
         move = getMove();
         isValid = verifyValidMove(game, move);
         if (isValid == 0) {
