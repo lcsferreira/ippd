@@ -1,356 +1,249 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <omp.h>
+#include <string.h>
+#include <time.h>
+#include "/usr/local/opt/libomp/include/omp.h"
 
-#define BOARD_SIZE 8
+#define SIZE 8
+#define MAX_THREADS 4
+#define MAX_MOVES 100
+#define PLAYER1 1
+#define PLAYER2 2
 
-#define EMPTY 0
-#define PLAYER_PIECE 1
-#define AI_PIECE 2
+typedef struct{
+    int **tabuleiro;
+    int currentPlayer; 
+} Game;
 
-#define PLAYER_PIECE_VALUE 1
-#define AI_PIECE_VALUE -1
+typedef struct{
+    int x;
+    int y;
+    int newX;
+    int newY;
+} Move;
 
-// Declaraçao de todas as funçoes
-int generateMoves(GameState state, int row, int col, int player);
-void getMoveCoordinates(GameState state, int row, int col, int moveIndex, int* newRow, int* newCol);
-int evaluateBoard(GameState state);
-int isMoveValid(GameState state, int row, int col, int newRow, int newCol, int player);
-int getNumPieces(GameState state, int player);
-void makeMove(GameState* state, int row, int col, int newRow, int newCol, int player);
-void undoMove(GameState* state, int row, int col, int newRow, int newCol, int player);
-int evaluateMove(GameState state, int player, int depth, int alpha, int beta);
-GameState findBestMove(GameState state, int player, int depth);
-int isGameOver(GameState state);
-void printBoard(GameState state);
-void playGame();
+typedef struct{
+    int nPieces;
+} Player;
 
+int menu();
+Move getMove();
+void playGame(Game game);
+void verifyWinner(Game game);
+void makeMove(Game game, Move move);
+int verifyValidMove(Game game, Move move);
+void inicializaTabuleiro(int **tabuleiro, int n);
+void imprimeTabuleiro(int **tabuleiro, int n);
+int **criaTabuleiro(int n);
+Game initGame();
 
-typedef struct {
-    int board[BOARD_SIZE][BOARD_SIZE];
-} GameState;
-
-int evaluateBoard(GameState state) {
-    int playerScore = 0;
-    int aiScore = 0;
-
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            if (state.board[i][j] == PLAYER_PIECE) {
-                playerScore += PLAYER_PIECE_VALUE;
-            } else if (state.board[i][j] == AI_PIECE) {
-                aiScore += AI_PIECE_VALUE;
-            }
-        }
+int **criaTabuleiro(int n) {
+    int **tabuleiro = (int **) malloc(n * sizeof(int *));
+    for (int i = 0; i < n; i++) {
+        tabuleiro[i] = (int *) malloc(n * sizeof(int));
     }
-
-    return playerScore + aiScore;
+    return tabuleiro;
 }
 
-int isMoveValid(GameState state, int row, int col, int newRow, int newCol, int player) {
-    // Implemente a lógica para verificar se um movimento é válido
-    // ...
-    return 0;
-}
-
-int getNumPieces(GameState state, int player) {
-    int numPieces = 0;
-
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            if (state.board[i][j] == player) {
-                numPieces++;
-            }
-        }
+void imprimeTabuleiro(int **tabuleiro, int n) {
+    printf("\n");
+    for (int i = 0; i < n; i++) {
+        printf("  %d", i);
     }
-
-    return numPieces;
-}
-
-void makeMove(GameState* state, int row, int col, int newRow, int newCol, int player) {
-    // Realizar o movimento
-    state->board[newRow][newCol] = player;
-    state->board[row][col] = EMPTY;
-
-    // Verificar se o movimento capturou alguma peça do oponente
-    int captureRow = (row + newRow) / 2;
-    int captureCol = (col + newCol) / 2;
-
-    if (abs(newRow - row) == 2 && abs(newCol - col) == 2 && state->board[captureRow][captureCol] != EMPTY) {
-        // Capturou uma peça do oponente
-        state->board[captureRow][captureCol] = EMPTY;
-        // Atualizar outras informações relacionadas à captura, se necessário
-        // ...
-    }
-
-    // Verificar se o movimento promoveu uma peça do jogador
-    if ((player == PLAYER_PIECE && newRow == BOARD_SIZE - 1) || (player == AI_PIECE && newRow == 0)) {
-        // Peça do jogador promovida a dama
-        state->board[newRow][newCol] = player + 2; // Marcar como dama
-        // Atualizar outras informações relacionadas à promoção, se necessário
-        // ...
-    }
-}
-
-
-void undoMove(GameState* state, int row, int col, int newRow, int newCol, int player) {
-
-    // Desfazer o movimento
-    state->board[newRow][newCol] = EMPTY;
-    state->board[row][col] = player;
-
-    // Verificar se o movimento capturou alguma peça do oponente
-    int captureRow = (row + newRow) / 2;
-    int captureCol = (col + newCol) / 2;
-
-    if (abs(newRow - row) == 2 && abs(newCol - col) == 2 && state->board[captureRow][captureCol] != EMPTY) {
-        // Desfazer a captura da peça do oponente
-        state->board[captureRow][captureCol] = (player == PLAYER_PIECE) ? AI_PIECE : PLAYER_PIECE;
-        // Atualizar outras informações relacionadas à captura, se necessário
-        // ...
-    }
-
-    // Verificar se o movimento promoveu uma peça do jogador
-
-    if ((player == PLAYER_PIECE && newRow == BOARD_SIZE - 1) || (player == AI_PIECE && newRow == 0)) {
-        // Peça do jogador promovida a dama
-        state->board[newRow][newCol] = player;
-        // Atualizar outras informações relacionadas à promoção, se necessário
-        // ...
-    }
-
-}
-
-int evaluateMove(GameState state, int player, int depth, int alpha, int beta) {
-    if (depth == 0) {
-        return evaluateBoard(state);
-    }
-
-    int bestScore = (player == AI_PIECE) ? -1000 : 1000;
-
-    int numPieces = getNumPieces(state, player);
-
-    // Gerar todos os movimentos possíveis para o jogador atual
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            if (state.board[i][j] == player) {
-                // Gerar todos os movimentos possíveis para uma peça
-                int numMoves = generateMoves(state, i, j, player); // Função para gerar movimentos possíveis
-
-                for (int k = 0; k < numMoves; k++) {
-                    int newRow, newCol; // Variáveis para armazenar as coordenadas do movimento
-
-                    // Obter as coordenadas do movimento atual
-                    getMoveCoordinates(state, i, j, k, &newRow, &newCol); // Função para obter as coordenadas do movimento
-
-                    // Realizar o movimento
-                    makeMove(&state, i, j, newRow, newCol, player);
-
-                    int score = evaluateMove(state, (player == PLAYER_PIECE) ? AI_PIECE : PLAYER_PIECE, depth - 1, alpha, beta);
-
-                    if (player == AI_PIECE) {
-                        bestScore = (score > bestScore) ? score : bestScore;
-                        alpha = (bestScore > alpha) ? bestScore : alpha;
-                    } else {
-                        bestScore = (score < bestScore) ? score : bestScore;
-                        beta = (bestScore < beta) ? bestScore : beta;
-                    }
-
-                    // Desfazer o movimento
-                    undoMove(&state, i, j, newRow, newCol, player);
-
-                    // Realizar a poda alfa-beta
-                    if (beta <= alpha) {
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    return bestScore;
-}
-
-GameState findBestMove(GameState state, int player, int depth) {
-    GameState bestMove;
-    int bestScore = -1000;
-
-    int numPieces = getNumPieces(state, player);
-
-    // Gerar todos os movimentos possíveis para o jogador atual
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            if (state.board[i][j] == player) {
-                // Gerar todos os movimentos possíveis para uma peça
-                int numMoves = generateMoves(state, i, j, player); // Função para gerar movimentos possíveis
-
-                for (int k = 0; k < numMoves; k++) {
-                    int newRow, newCol; // Variáveis para armazenar as coordenadas do movimento
-
-                    // Obter as coordenadas do movimento atual
-                    getMoveCoordinates(state, i, j, k, &newRow, &newCol); // Função para obter as coordenadas do movimento
-
-                    // Realizar o movimento
-                    makeMove(&state, i, j, newRow, newCol, player);
-
-                    int score = evaluateMove(state, (player == PLAYER_PIECE) ? AI_PIECE : PLAYER_PIECE, depth - 1, -1000, 1000);
-
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMove = state;
-                    }
-
-                    // Desfazer o movimento
-                    undoMove(&state, i, j, newRow, newCol, player);
-                }
-            }
-        }
-    }
-
-    return bestMove;
-}
-
-
-int isGameOver(GameState state) {
-    // Verificar se o jogador humano venceu
-    int playerWin = 1;
-    // Percorrer o tabuleiro e verificar se ainda existem peças da máquina
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            if (state.board[i][j] == AI_PIECE || state.board[i][j] == AI_PIECE + 2) {
-                playerWin = 0;
-                break;
-            }
-        }
-        if (!playerWin) {
-            break;
-        }
-    }
-    if (playerWin) {
-        printf("Parabéns! Você venceu!\n");
-        return 1;
-    }
-
-    // Verificar se a máquina venceu
-    int aiWin = 1;
-    // Percorrer o tabuleiro e verificar se ainda existem peças do jogador humano
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            if (state.board[i][j] == PLAYER_PIECE || state.board[i][j] == PLAYER_PIECE + 2) {
-                aiWin = 0;
-                break;
-            }
-        }
-        if (!aiWin) {
-            break;
-        }
-    }
-    if (aiWin) {
-        printf("Você perdeu! A máquina venceu!\n");
-        return 1;
-    }
-
-    // Verificar se houve empate
-    int numPlayerPieces = 0;
-    int numAiPieces = 0;
-    // Percorrer o tabuleiro e contar o número de peças do jogador humano e da máquina
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            if (state.board[i][j] == PLAYER_PIECE || state.board[i][j] == PLAYER_PIECE + 2) {
-                numPlayerPieces++;
-            } else if (state.board[i][j] == AI_PIECE || state.board[i][j] == AI_PIECE + 2) {
-                numAiPieces++;
-            }
-        }
-    }
-    if (numPlayerPieces == 0 && numAiPieces == 0) {
-        printf("Empate! O jogo terminou em empate!\n");
-        return 1;
-    }
-
-    // O jogo não terminou
-    return 0;
-}
-
-
-void printBoard(GameState state) {
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            printf("%d ", state.board[i][j]);
+    printf("\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d ", i);
+        for (int j = 0; j < n; j++) {
+            printf(" %d ", tabuleiro[i][j]);
         }
         printf("\n");
     }
-    printf("\n");
 }
 
-void playGame() {
-    GameState state;
-
-    // Inicializar o estado do jogo, como o tabuleiro e outras informações necessárias
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            state.board[i][j] = EMPTY;
+void inicializaTabuleiro(int **tabuleiro, int n) {
+    int i, j;
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n / 2; j++) {
+            if (i % 2 == 0) {
+                tabuleiro[i][2 * j] = 0;
+                tabuleiro[i][2 * j + 1] = (i < 3) ? PLAYER1 : (i > 4) ? PLAYER2 : 0;
+            } else {
+                tabuleiro[i][2 * j] = (i < 3) ? PLAYER1 : (i > 4) ? PLAYER2 : 0;
+                tabuleiro[i][2 * j + 1] = 0;
+            }
         }
-    }
-
-    state.board[1][0] = AI_PIECE;
-    state.board[3][2] = AI_PIECE;
-    state.board[5][4] = PLAYER_PIECE;
-    state.board[7][6] = PLAYER_PIECE;
-
-    printBoard(state);
-
-    // Loop principal do jogo
-    while (1) {
-        // Jogador humano faz a jogada
-        int row, col, newRow, newCol;
-        printf("Digite a posição atual da peça (linha coluna): ");
-        scanf("%d %d", &row, &col);
-        printf("Digite a posição para onde mover a peça (linha coluna): ");
-        scanf("%d %d", &newRow, &newCol);
-
-        if (isMoveValid(state, row, col, newRow, newCol, PLAYER_PIECE)) {
-            makeMove(&state, row, col, newRow, newCol, PLAYER_PIECE);
-        } else {
-            printf("Movimento inválido! Tente novamente.\n");
-            continue;
-        }
-
-        printBoard(state);
-
-        // Verificar se o jogo terminou após a jogada do jogador humano
-        // ...
-        if (isGameOver(state)) {
-            break;
-        }
-
-
-        // Máquina encontra a melhor jogada usando o algoritmo Minimax com poda alfa-beta
-        GameState bestMove = findBestMove(state, AI_PIECE, 5);  // Busca limitada de 5 iterações
-
-        // Máquina faz a melhor jogada encontrada
-        // ...
-        makeMove(&state, row, col, newRow, newCol, AI_PIECE);
-
-        // Verificar se o jogo terminou após a jogada da máquina
-        // ...
-        if (isGameOver(state)) {
-            break;
-        }
-
-        printBoard(state);
-
-        // Repetir o loop para a próxima rodada
-        // ...
     }
 }
 
-int main() {
-    // Inicializar OpenMP
-    omp_set_num_threads(4);
+Move searchBestMove(Game game){
+    // implement a minimax algorithm to search for the best move using omp
+    // return the best move
+}
 
-    // Iniciar o jogo
-    playGame();
+Game initGame(){
+    Game game;
+    game.tabuleiro = criaTabuleiro(SIZE);
+    inicializaTabuleiro(game.tabuleiro, SIZE);
+    game.currentPlayer = PLAYER1;
+    return game;
+}
 
+int verifyValidMove(Game game, Move move) {
+    int currentPlayer = game.currentPlayer;
+
+    // Check if the move is inside the matrix bounds
+    if (move.x < 0 || move.x >= SIZE || move.y < 0 || move.y >= SIZE ||
+        move.newX < 0 || move.newX >= SIZE || move.newY < 0 || move.newY >= SIZE) {
+        printf("Jogada invalida: Posicao fora dos limites do tabuleiro!\n");
+        return 0;
+    }
+
+
+    // Check if the piece is moving forward (player 1) or backward (player 2)
+    if ((currentPlayer == PLAYER1 && move.newX < move.x) || (currentPlayer == PLAYER2 && move.newX > move.x)) {
+        printf("Jogada invalida: Peca deve mover-se apenas para frente!\n");
+        return 0;
+    }
+
+    // Check if the destination position is empty
+    if (game.tabuleiro[move.newX][move.newY] == 1 && game.currentPlayer == 1) {
+        printf("Jogada invalida: A posicao de destino ja possui uma peca sua!\n");
+        return 0;
+    }
+    if (game.tabuleiro[move.newX][move.newY] == 2 && game.currentPlayer == 2) {
+        printf("Jogada invalida: A posicao de destino ja possui uma peca sua!\n");
+        return 0;
+    }
+
+    // Check if the move is diagonal and in front
+    if (abs(move.x - move.newX) != 1 || abs(move.y - move.newY) != 1) {
+        // Check if the move is capturing an opponent's piece
+        if (abs(move.x - move.newX) == 2 && abs(move.y - move.newY) == 2) {
+            int capturedX = (move.x + move.newX) / 2;
+            int capturedY = (move.y + move.newY) / 2;
+            int capturedPiece = game.tabuleiro[capturedX][capturedY];
+
+            if (capturedPiece == currentPlayer || capturedPiece == 0) {
+                printf("Jogada invalida: Voce deve capturar a peca adversaria!\n");
+                return 0;
+            } else {
+                game.tabuleiro[capturedX][capturedY] = 0; // Remove the captured piece
+                return 1;
+            }
+        }
+        printf("Jogada invalida: Movimento deve ser diagonal!\n");
+        return 0;
+    }
+
+    // All checks passed, move is valid
+    return 1;
+}
+
+
+void makeMove(Game game, Move move) {
+    game.tabuleiro[move.newX][move.newY] = game.tabuleiro[move.x][move.y];
+    game.tabuleiro[move.x][move.y] = 0;
+    if(move.x - move.newX == 2 || move.y - move.newY == 2){
+        game.tabuleiro[move.x - 1][move.y - 1] = 0;
+    }
+    if(move.x - move.newX == -2 || move.y - move.newY == -2){
+        game.tabuleiro[move.x + 1][move.y + 1] = 0;
+    }
+    printf("Jogador %d moveu a peca de [%d][%d] para [%d][%d]\n", game.currentPlayer, move.x, move.y, move.newX, move.newY);
+}
+
+void verifyWinner(Game game) {
+    int i, j;
+    int player1 = 0;
+    int player2 = 0;
+    for (i = 0; i < SIZE; i++) {
+        for (j = 0; j < SIZE / 2; j++) {
+            if (game.tabuleiro[i][2 * j] == PLAYER1) {
+                player1++;
+            } else if (game.tabuleiro[i][2 * j + 1] == PLAYER1) {
+                player1++;
+            }
+            if (game.tabuleiro[i][2 * j] == PLAYER2) {
+                player2++;
+            } else if (game.tabuleiro[i][2 * j + 1] == PLAYER2) {
+                player2++;
+            }
+        }
+    }
+    if(player1 == 0){
+        printf("Jogador 2 venceu!\n");
+        exit(0);
+    }
+    if(player2 == 0){
+        printf("Jogador 1 venceu!\n");
+        exit(0);
+    }
+}
+
+void playGame(Game game) {
+    int i = 0;
+    int opcao;
+    while (i < MAX_MOVES) {
+        opcao = menu();
+        switch (opcao) {
+            case 1:
+                printf("Jogador %d\n", game.currentPlayer);
+                Move move;
+                int isValid;
+                move = getMove();
+                isValid = verifyValidMove(game, move);
+                if(isValid == 0){
+                    break;
+                }else{
+                    makeMove(game, move);
+                    if(game.currentPlayer == 1){
+                        game.currentPlayer = PLAYER2;
+                    }else{
+                        game.currentPlayer = PLAYER1;
+                    }
+                    verifyWinner(game);
+                    i++;
+                    break;
+                }
+            case 2:
+                imprimeTabuleiro(game.tabuleiro, SIZE);
+                break;
+            case 3:
+                exit(0);
+                break;
+            default:
+                printf("Opcao invalida!\n");
+                break;
+        }
+    }
+}
+
+Move getMove(){
+    Move move;
+    printf("Digite a linha da peca que deseja mover: ");
+    scanf("%d", &move.x);
+    printf("Digite a coluna da peca que deseja mover: ");
+    scanf("%d", &move.y);
+    printf("Digite a linha para onde deseja mover a peca: ");
+    scanf("%d", &move.newX);
+    printf("Digite a coluna para onde deseja mover a peca: ");
+    scanf("%d", &move.newY);
+    return move;
+}
+
+int menu(){
+    int opcao;
+    printf("--- Jogo de Damas ---\n");
+    printf("1 - Jogar\n");
+    printf("2 - Imprimir tabuleiro\n");
+    printf("3 - Sair\n");
+    printf("Digite a opcao desejada: ");
+    scanf("%d", &opcao);
+    return opcao;
+}
+
+int main(int argc, char *argv[]) {
+    Game game = initGame();
+    playGame(game);
     return 0;
 }
