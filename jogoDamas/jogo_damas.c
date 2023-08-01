@@ -334,14 +334,26 @@ int verifyValidMoveNoPrint(Game game, Move move){
 void makeMove(Game game, Move move) {
   game.tabuleiro[move.newX][move.newY] = game.tabuleiro[move.x][move.y];
   game.tabuleiro[move.x][move.y] = 0;
-  if (move.x - move.newX == 2 || move.y - move.newY == 2) {
-    game.tabuleiro[move.x - 1][move.y - 1] = 0;
+  if (abs(move.x - move.newX) == 2 && abs(move.y - move.newY) == 2) {
+    // If the move captures an opponent's piece, remove it
+    int capturedX = (move.x + move.newX) / 2;
+    int capturedY = (move.y + move.newY) / 2;
+    game.tabuleiro[capturedX][capturedY] = 0;
+
+    // Check if the piece can move one more house further
+    int furtherX = move.newX + (move.newX - move.x);
+    int furtherY = move.newY + (move.newY - move.y);
+    Move furtherMove = {move.newX, move.newY, furtherX, furtherY};
+    if (verifyValidMoveNoPrint(game, furtherMove) == 1) {
+      // If valid, make the move one more house further
+      game.tabuleiro[furtherX][furtherY] = game.tabuleiro[move.newX][move.newY];
+      game.tabuleiro[move.newX][move.newY] = 0;
+    }else{
+      printf("Voce nao pode capturar a peca!\n");
+    }
   }
-  if (move.x - move.newX == -2 || move.y - move.newY == -2) {
-    game.tabuleiro[move.x + 1][move.y + 1] = 0;
-  }
-//   printf("Jogador %d moveu a peca de [%d][%d] para [%d][%d]\n", game.currentPlayer, move.x, move.y, move.newX, move.newY);
 }
+
 
 void verifyWinner(Game game) {
   int i, j;
