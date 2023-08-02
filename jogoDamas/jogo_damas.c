@@ -1,5 +1,5 @@
-#include "/usr/local/opt/libomp/include/omp.h"
-// #include <omp.h>
+// #include "/usr/local/opt/libomp/include/omp.h"
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,7 +43,6 @@ int evaluateGame(Game game);
 Move searchBestMove(Game game);
 int minimax(Game game, int depth, int isMaximizingPlayer, int alpha, int beta, int currentPlayer, int opponentPlayer);
 int verifyValidMoveNoPrint(Game game, Move move);
-
 
 int **criaTabuleiro(int n) {
   int **tabuleiro = (int **)malloc(n * sizeof(int *));
@@ -134,7 +133,7 @@ Move searchBestMove(Game game) {
             Move move = {i, j, newX, newY};
 
             if (verifyValidMoveNoPrint(game, move) == 1) {
-            //   printf("Jogador %d moveu a peca de [%d][%d] para [%d][%d]\n", game.currentPlayer, move.x, move.y, move.newX, move.newY);
+              //   printf("Jogador %d moveu a peca de [%d][%d] para [%d][%d]\n", game.currentPlayer, move.x, move.y, move.newX, move.newY);
               Game newGame;
               newGame.tabuleiro = criaTabuleiro(SIZE);
               newGame.currentPlayer = currentPlayer;
@@ -281,29 +280,29 @@ int verifyValidMove(Game game, Move move) {
   return 1;
 }
 
-int verifyValidMoveNoPrint(Game game, Move move){
-    int currentPlayer = game.currentPlayer;
+int verifyValidMoveNoPrint(Game game, Move move) {
+  int currentPlayer = game.currentPlayer;
 
   // Check if the move is inside the matrix bounds
   if (move.x < 0 || move.x >= SIZE || move.y < 0 || move.y >= SIZE ||
       move.newX < 0 || move.newX >= SIZE || move.newY < 0 || move.newY >= SIZE) {
-    
+
     return 0;
   }
 
   // Check if the piece is moving forward (player 1) or backward (player 2)
   if ((currentPlayer == PLAYER1 && move.newX < move.x) || (currentPlayer == PLAYER2 && move.newX > move.x)) {
-    
+
     return 0;
   }
 
   // Check if the destination position is empty
   if (game.tabuleiro[move.newX][move.newY] == 1 && game.currentPlayer == 1) {
-    
+
     return 0;
   }
   if (game.tabuleiro[move.newX][move.newY] == 2 && game.currentPlayer == 2) {
-    
+
     return 0;
   }
 
@@ -316,14 +315,14 @@ int verifyValidMoveNoPrint(Game game, Move move){
       int capturedPiece = game.tabuleiro[capturedX][capturedY];
 
       if (capturedPiece == currentPlayer || capturedPiece == 0) {
-        
+
         return 0;
       } else {
         game.tabuleiro[capturedX][capturedY] = 0; // Remove the captured piece
         return 1;
       }
     }
-    
+
     return 0;
   }
 
@@ -348,12 +347,11 @@ void makeMove(Game game, Move move) {
       // If valid, make the move one more house further
       game.tabuleiro[furtherX][furtherY] = game.tabuleiro[move.newX][move.newY];
       game.tabuleiro[move.newX][move.newY] = 0;
-    }else{
+    } else {
       printf("Voce nao pode capturar a peca!\n");
     }
   }
 }
-
 
 void verifyWinner(Game game) {
   int i, j;
@@ -390,13 +388,13 @@ void playGame(Game game) {
     if (game.currentPlayer == PLAYER2) {
       imprimeTabuleiro(game.tabuleiro, SIZE);
       Move bestMove = searchBestMove(game);
-        printf("Jogada do computador: "
-            "de [%d][%d] para [%d][%d]\n",
-            bestMove.x, bestMove.y, bestMove.newX, bestMove.newY);
-        makeMove(game, bestMove);
-        game.currentPlayer = PLAYER1;
-        verifyWinner(game);
-        i++;
+      printf("Jogada do computador: "
+             "de [%d][%d] para [%d][%d]\n",
+             bestMove.x, bestMove.y, bestMove.newX, bestMove.newY);
+      makeMove(game, bestMove);
+      game.currentPlayer = PLAYER1;
+      verifyWinner(game);
+      i++;
     } else {
       opcao = menu();
       switch (opcao) {
