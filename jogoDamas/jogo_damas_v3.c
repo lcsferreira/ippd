@@ -1,10 +1,11 @@
-#include <omp.h>
+// #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #define N 8
+#define MAX_JOGADAS 10
 
 // Jogador 1 = Preto
 // Jogador 2 = Branco
@@ -25,6 +26,11 @@ typedef struct {
   int cor;
   int pecasCapturadas;
 } Jogador;
+
+typedef struct {
+  Coordenada posicaoAtual;
+  Coordenada posicaoNova;
+} Jogada;
 
 // Função para inicializar o jogador
 void inicializarJogador(Jogador *jogador, int cor) {
@@ -210,10 +216,10 @@ void moverPeca(Tabuleiro *tabuleiro, Jogador *jogador, Coordenada coordenada, Co
   }
 }
 
-// Função para pegar as coordenadas das peças pretas
 void pegarCoordenadasPecasPretas(Tabuleiro *tabuleiro, Coordenada *coordenadasPecasPretas) {
   int i, j;
   int k = 0;
+
   for (i = 0; i < N; i++)
     for (j = 0; j < N; j++)
       if (tabuleiro->tabuleiro[i][j] == 1) {
@@ -223,58 +229,62 @@ void pegarCoordenadasPecasPretas(Tabuleiro *tabuleiro, Coordenada *coordenadasPe
       }
 }
 
-// função para selecionar randomicamente uma peça preta
-Coordenada selecionarPecaPretaAleatoria(Tabuleiro *tabuleiro, Coordenada *coordenadasPecasPretas) {
-  int i;
-  int pecaAleatoria = rand() % tabuleiro->pecasPretas;
-  Coordenada coordenada;
-  coordenada.x = coordenadasPecasPretas[pecaAleatoria].x;
-  coordenada.y = coordenadasPecasPretas[pecaAleatoria].y;
-  return coordenada;
-}
-
-// Função para testar as jogadas possíveis da peças preta selecionada
-Coordenada *testarJogadasPossiveisPecasPretas(Tabuleiro *tabuleiro, Coordenada coordenada, Coordenada *jogadasPossiveisPecasPretas) {
-  int i;
+void verificarPossiveisJogadas(Tabuleiro *tabuleiro, Coordenada *coordenadasPecasPretas, Jogada *jogadasValidas){
+  // para cada peca preta, verificar as possiveis jogadas (diagonal superior esquerda, diagonal superior direita, diagonal inferior esquerda, diagonal inferior direita)
+  // verificar as jogadas de captura (diagonal superior esquerda, diagonal superior direita, diagonal inferior esquerda, diagonal inferior direita)
+  // se a posicao estiver vazia, adicionar na lista de possiveis jogadas
   int k = 0;
-  if (coordenada.x + 1 < N && coordenada.y + 1 < N) {
-    if (tabuleiro->tabuleiro[coordenada.x + 1][coordenada.y + 1] == 0) {
-      jogadasPossiveisPecasPretas[k].x = coordenada.x + 1;
-      jogadasPossiveisPecasPretas[k].y = coordenada.y + 1;
-      k++;
-    }
-  }
-  if (coordenada.x + 1 < N && coordenada.y - 1 >= 0) {
-    if (tabuleiro->tabuleiro[coordenada.x + 1][coordenada.y - 1] == 0) {
-      jogadasPossiveisPecasPretas[k].x = coordenada.x + 1;
-      jogadasPossiveisPecasPretas[k].y = coordenada.y - 1;
-      k++;
-    }
-  }
-  if (coordenada.x + 2 < N && coordenada.y + 2 < N) {
-    if (tabuleiro->tabuleiro[coordenada.x + 2][coordenada.y + 2] == 0) {
-      jogadasPossiveisPecasPretas[k].x = coordenada.x + 2;
-      jogadasPossiveisPecasPretas[k].y = coordenada.y + 2;
-      k++;
-    }
-  }
-  if (coordenada.x + 2 < N && coordenada.y - 2 >= 0) {
-    if (tabuleiro->tabuleiro[coordenada.x + 2][coordenada.y - 2] == 0) {
-      jogadasPossiveisPecasPretas[k].x = coordenada.x + 2;
-      jogadasPossiveisPecasPretas[k].y = coordenada.y - 2;
-      k++;
+
+  for(int i =0; i <tabuleiro->pecasPretas; i++){
+    if(!(coordenadasPecasPretas[i].x - 1 < 0 || coordenadasPecasPretas[i].y - 1 < 0)&&!(coordenadasPecasPretas[i].x + 1 >= N || coordenadasPecasPretas[i].y + 1 >= N)){
+      // JOGADA 
+      if(tabuleiro->tabuleiro[coordenadasPecasPretas[i].x - 1][coordenadasPecasPretas[i].y + 1] == 0){
+        // adicionar na lista de possiveis jogadas
+        jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+        jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+        jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x - 1;
+        jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 1;
+        k++;
+      }
+      if(tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y + 1] == 0){
+        // adicionar na lista de possiveis jogadas
+        jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+        jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+        jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 1;
+        jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 1;
+        k++;
+      }
+    }else if(!(coordenadasPecasPretas[i].x - 2 < 0 || coordenadasPecasPretas[i].y - 2 < 0)&&!(coordenadasPecasPretas[i].x + 2 >= N || coordenadasPecasPretas[i].y + 2 >= N)){
+      // JOGADA 
+      if(tabuleiro->tabuleiro[coordenadasPecasPretas[i].x - 2][coordenadasPecasPretas[i].y + 2] == 0){
+        // adicionar na lista de possiveis jogadas
+        jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+        jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+        jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x - 2;
+        jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 2;
+        k++;
+      }
+      if(tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 2][coordenadasPecasPretas[i].y + 2] == 0){
+        // adicionar na lista de possiveis jogadas
+        jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+        jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+        jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 2;
+        jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 2;
+        k++;
+      }
     }
   }
 }
 
-// Função para pegar uma jogada aleatória das peças pretas
-Coordenada pegarJogadaAleatoriaPecasPretas(Tabuleiro *tabuleiro, Coordenada *jogadasPossiveisPecasPretas) {
-  int i;
-  int jogadaAleatoria = rand() % tabuleiro->pecasPretas;
-  Coordenada jogada;
-  jogada.x = jogadasPossiveisPecasPretas[jogadaAleatoria].x;
-  jogada.y = jogadasPossiveisPecasPretas[jogadaAleatoria].y;
-  return jogada;
+Jogada pegarJogadaAleatoriaPecasPretas(Tabuleiro *tabuleiro, Jogada *jogadasValidas){
+  // Escolher randomicamente uma jogada da lista de possiveis jogadas
+  srand(time(NULL));
+  int random = rand() % tabuleiro->pecasPretas * 4;
+  //verificar se a jogada nao vai de 00 para 00
+  while(jogadasValidas[random].posicaoAtual.x == 0 && jogadasValidas[random].posicaoAtual.y == 0 && jogadasValidas[random].posicaoNova.x == 0 && jogadasValidas[random].posicaoNova.y == 0){
+    random = rand() % tabuleiro->pecasPretas * 4;
+  }
+  return jogadasValidas[random];
 }
 
 int main() {
@@ -299,41 +309,47 @@ int main() {
       // Coordenada jogadasPossiveisPecasPretas[tabuleiro.pecasPretas * 4];
 
       Coordenada *coordenadasPecasPretas = (Coordenada *)malloc(sizeof(Coordenada) * tabuleiro.pecasPretas);
-      Coordenada *jogadasPossiveisPecasPretas = (Coordenada *)malloc(sizeof(Coordenada) * 4);
-      if (coordenadasPecasPretas == NULL || jogadasPossiveisPecasPretas == NULL) {
+      Jogada* jogadasValidas = (Jogada*)malloc(sizeof(Jogada) * MAX_JOGADAS);
+
+      if (coordenadasPecasPretas == NULL || jogadasValidas == NULL) {
         printf("Erro ao alocar memoria\n");
         exit(1);
       }
 
       pegarCoordenadasPecasPretas(&tabuleiro, coordenadasPecasPretas);
-
-      for (int i = 0; i <= 11; i++) {
-        printf("coordenadasPecasPretas[%d].x = %d\n", i, coordenadasPecasPretas[i].x);
-        printf("coordenadasPecasPretas[%d].y = %d\n", i, coordenadasPecasPretas[i].y);
+      
+      for(int i = 0; i < tabuleiro.pecasPretas; i++){
+        printf("Peca %d %d\n", coordenadasPecasPretas[i].x, coordenadasPecasPretas[i].y);
       }
 
-      Coordenada coordenada = selecionarPecaPretaAleatoria(&tabuleiro, coordenadasPecasPretas);
+      verificarPossiveisJogadas(&tabuleiro, coordenadasPecasPretas, jogadasValidas);
 
-      printf("coordenada.x = %d\n", coordenada.x);
-      printf("coordenada.y = %d\n", coordenada.y);
-
-      testarJogadasPossiveisPecasPretas(&tabuleiro, coordenada, jogadasPossiveisPecasPretas);
-
-      for (int i = 0; i <= 4; i++) {
-        printf("jogadasPossiveisPecasPretas[%d].x = %d\n", i, jogadasPossiveisPecasPretas[i].x);
-        printf("jogadasPossiveisPecasPretas[%d].y = %d\n", i, jogadasPossiveisPecasPretas[i].y);
+      for(int i = 0; i < MAX_JOGADAS; i++){
+        printf("Jogada %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
       }
 
-      Coordenada jogada = pegarJogadaAleatoriaPecasPretas(&tabuleiro, jogadasPossiveisPecasPretas);
+      Jogada jogada = pegarJogadaAleatoriaPecasPretas(&tabuleiro, jogadasValidas);
 
-      printf("jogada.x = %d\n", jogada.x);
-      printf("jogada.y = %d\n", jogada.y);
+      printf("Mover peca %d %d para %d %d\n", jogada.posicaoAtual.x, jogada.posicaoAtual.y, jogada.posicaoNova.x, jogada.posicaoNova.y);
 
-      moverPeca(&tabuleiro, &jogadorMaquina, coordenada, jogada, &jogador_da_rodada);
+      moverPeca(&tabuleiro, &jogadorMaquina, jogada.posicaoAtual, jogada.posicaoNova, &jogador_da_rodada);
       imprimirTabuleiro(&tabuleiro);
 
+      // Zerar as listas de coordenadas e jogadas
+      for (int i = 0; i < tabuleiro.pecasPretas; i++) {
+        coordenadasPecasPretas[i].x = 0;
+        coordenadasPecasPretas[i].y = 0;
+      }
+
+      for (int i = 0; i < MAX_JOGADAS; i++) {
+        jogadasValidas[i].posicaoAtual.x = 0;
+        jogadasValidas[i].posicaoAtual.y = 0;
+        jogadasValidas[i].posicaoNova.x = 0;
+        jogadasValidas[i].posicaoNova.y = 0;
+      }
+
       free(coordenadasPecasPretas);
-      free(jogadasPossiveisPecasPretas);
+      free(jogadasValidas);
     } else {
       printf("Sua vez - Voce eh as pecas brancas\n");
       Coordenada coordenada = escolherPeca(&tabuleiro, &jogadorHumano);
