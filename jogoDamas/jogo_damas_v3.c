@@ -5,7 +5,7 @@
 #include <time.h>
 
 #define N 8
-#define MAX_JOGADAS 10
+#define MAX_JOGADAS 30
 #define MAX_THREADS 4
 #define max(a, b) a > b ? a : b
 #define min(a, b) a < b ? a : b
@@ -256,41 +256,48 @@ void verificarPossiveisJogadas(Tabuleiro *tabuleiro, Coordenada *coordenadasPeca
   int k = 0;
 
   for (int i = 0; i < tabuleiro->pecasPretas; i++) {
-    if (!(coordenadasPecasPretas[i].x - 1 < 0 || coordenadasPecasPretas[i].y - 1 < 0) && !(coordenadasPecasPretas[i].x + 1 >= N || coordenadasPecasPretas[i].y + 1 >= N)) {
-      // JOGADA
-      if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x - 1][coordenadasPecasPretas[i].y + 1] == 0) {
-        // adicionar na lista de possiveis jogadas
-        jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
-        jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
-        jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x - 1;
-        jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 1;
-        k++;
+    if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x][coordenadasPecasPretas[i].y] != 0) {
+      if (!(coordenadasPecasPretas[i].x + 1 >= N || coordenadasPecasPretas[i].y - 1 < 0) && !(coordenadasPecasPretas[i].x + 1 >= N || coordenadasPecasPretas[i].y + 1 >= N)) {
+        // JOGADA
+        if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y - 1] == 0) {
+          // adicionar na lista de possiveis jogadas
+          jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+          jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+          jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 1;
+          jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y - 1;
+          k++;
+        }
+        if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y + 1] == 0) {
+          // adicionar na lista de possiveis jogadas
+          jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+          jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+          jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 1;
+          jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 1;
+          k++;
+        }
       }
-      if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y + 1] == 0) {
-        // adicionar na lista de possiveis jogadas
-        jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
-        jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
-        jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 1;
-        jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 1;
-        k++;
-      }
-    } else if (!(coordenadasPecasPretas[i].x - 2 < 0 || coordenadasPecasPretas[i].y - 2 < 0) && !(coordenadasPecasPretas[i].x + 2 >= N || coordenadasPecasPretas[i].y + 2 >= N)) {
-      // JOGADA
-      if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x - 2][coordenadasPecasPretas[i].y + 2] == 0) {
-        // adicionar na lista de possiveis jogadas
-        jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
-        jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
-        jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x - 2;
-        jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 2;
-        k++;
-      }
-      if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 2][coordenadasPecasPretas[i].y + 2] == 0) {
-        // adicionar na lista de possiveis jogadas
-        jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
-        jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
-        jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 2;
-        jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 2;
-        k++;
+      if (!(coordenadasPecasPretas[i].x + 2 >= N || coordenadasPecasPretas[i].y - 2 < 0) && !(coordenadasPecasPretas[i].x + 2 >= N || coordenadasPecasPretas[i].y + 2 >= N)) {
+        // JOGADA
+        if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 2][coordenadasPecasPretas[i].y - 2] == 0) {
+          if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y - 1] == 2) {
+            // adicionar na lista de possiveis jogadas
+            jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+            jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+            jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 2;
+            jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y - 2;
+            k++;
+          }
+        }
+        if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 2][coordenadasPecasPretas[i].y + 2] == 0) {
+          if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y + 1] == 2) {
+            // adicionar na lista de possiveis jogadas
+            jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+            jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+            jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 2;
+            jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 2;
+            k++;
+          }
+        }
       }
     }
   }
@@ -333,9 +340,18 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
   }
 
   pegarCoordenadasPecasPretas(tabuleiro, coordenadasPecasPretas);
+
+  // limpa a lista de jogadas validas
+  for (int i = 0; i < MAX_JOGADAS; i++) {
+    jogadasValidas[i].posicaoAtual.x = -1;
+    jogadasValidas[i].posicaoAtual.y = -1;
+    jogadasValidas[i].posicaoNova.x = -1;
+    jogadasValidas[i].posicaoNova.y = -1;
+  }
+
   verificarPossiveisJogadas(tabuleiro, coordenadasPecasPretas, jogadasValidas);
   // se não houver jogadas validas
-  if (jogadasValidas[0].posicaoAtual.x == 0 && jogadasValidas[0].posicaoAtual.y == 0 && jogadasValidas[0].posicaoNova.x == 0 && jogadasValidas[0].posicaoNova.y == 0) {
+  if (jogadasValidas[0].posicaoAtual.x == -1 && jogadasValidas[0].posicaoAtual.y == -1 && jogadasValidas[0].posicaoNova.x == -1 && jogadasValidas[0].posicaoNova.y == -1) {
     printf("Não há jogadas validas\n");
     free(coordenadasPecasPretas);
     free(jogadasValidas);
@@ -345,6 +361,7 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
 
   // faz uma copia do tabuleiro atual
   Tabuleiro *tabuleiroCopia = (Tabuleiro *)malloc(sizeof(Tabuleiro));
+
   if (tabuleiroCopia == NULL) {
     printf("Erro ao alocar memoria\n");
     exit(1);
@@ -352,26 +369,26 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
 
   int numeroJogadasValidas = 0;
   for (int i = 0; i < MAX_JOGADAS; i++) {
-    if (jogadasValidas[i].posicaoAtual.x != 0 && jogadasValidas[i].posicaoAtual.y != 0 && jogadasValidas[i].posicaoNova.x != 0 && jogadasValidas[i].posicaoNova.y != 0) {
-      numeroJogadasValidas++;
+    if (jogadasValidas[i].posicaoAtual.x != jogadasValidas[i].posicaoNova.x && jogadasValidas[i].posicaoAtual.y != jogadasValidas[i].posicaoNova.y) {
+      if (jogadasValidas[i].posicaoAtual.x >= 0 && jogadasValidas[i].posicaoAtual.y >= 0 && jogadasValidas[i].posicaoNova.x >= 0 && jogadasValidas[i].posicaoNova.y >= 0) {
+        if (jogadasValidas[i].posicaoAtual.x < N && jogadasValidas[i].posicaoAtual.y < N && jogadasValidas[i].posicaoNova.x < N && jogadasValidas[i].posicaoNova.y < N) {
+          numeroJogadasValidas++;
+        }
+      }
     }
   }
 
-  printf("Numero de jogadas validas %d\n", numeroJogadasValidas);
-
-  memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
-  // int jogadorDaRodada = 1;
   for (int i = 0; i < numeroJogadasValidas; i++) {
-    printf("Jogada %d\n", i);
+    memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
     moverPeca(tabuleiroCopia, jogador, jogadasValidas[i].posicaoAtual, jogadasValidas[i].posicaoNova, &lado->cor);
-    imprimirTabuleiro(tabuleiroCopia);
-    heuristicas[i] = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, 3, alpha, beta);
-    printf("Heuristica avaliada%d\n", heuristicas[i]);
+    heuristicas[i] = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, 2, alpha, beta);
+    printf("Heuristica avaliada %d\n", heuristicas[i]);
   }
-  free(tabuleiroCopia);
+
+  // printf("heuristicas avaliadas\n");
 
   int max_heuristica = -1000;
-  // [0][0][0][0][0][0][0][0][0][0]
+
   for (int i = 0; i < numeroJogadasValidas; i++) {
     if (heuristicas[i] >= max_heuristica) {
       max_heuristica = heuristicas[i];
@@ -380,26 +397,30 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
 
   for (int i = 0; i < numeroJogadasValidas; i++) {
     if (heuristicas[i] < max_heuristica) {
-      jogadasValidas[i].posicaoAtual.x = 0;
-      jogadasValidas[i].posicaoAtual.y = 0;
-      jogadasValidas[i].posicaoNova.x = 0;
-      jogadasValidas[i].posicaoNova.y = 0;
-      // apaga a heuristica
+      jogadasValidas[i].posicaoAtual.x = -1;
+      jogadasValidas[i].posicaoAtual.y = -1;
+      jogadasValidas[i].posicaoNova.x = -1;
+      jogadasValidas[i].posicaoNova.y = -1;
+
       heuristicas[i] = -1000;
     }
   }
 
   numeroJogadasValidas = 0;
   for (int i = 0; i < MAX_JOGADAS; i++) {
-    if (jogadasValidas[i].posicaoAtual.x != 0 && jogadasValidas[i].posicaoAtual.y != 0 && jogadasValidas[i].posicaoNova.x != 0 && jogadasValidas[i].posicaoNova.y != 0) {
-      numeroJogadasValidas++;
+    if (jogadasValidas[i].posicaoAtual.x != jogadasValidas[i].posicaoNova.x && jogadasValidas[i].posicaoAtual.y != jogadasValidas[i].posicaoNova.y) {
+      if (jogadasValidas[i].posicaoAtual.x >= 0 && jogadasValidas[i].posicaoAtual.y >= 0 && jogadasValidas[i].posicaoNova.x >= 0 && jogadasValidas[i].posicaoNova.y >= 0) {
+        if (jogadasValidas[i].posicaoAtual.x < N && jogadasValidas[i].posicaoAtual.y < N && jogadasValidas[i].posicaoNova.x < N && jogadasValidas[i].posicaoNova.y < N) {
+          numeroJogadasValidas++;
+        }
+      }
     }
   }
 
   srand(time(NULL));
   int random = rand() % numeroJogadasValidas;
   // verificar se a jogada nao vai de 00 para 00
-  while (jogadasValidas[random].posicaoAtual.x == 0 && jogadasValidas[random].posicaoAtual.y == 0 && jogadasValidas[random].posicaoNova.x == 0 && jogadasValidas[random].posicaoNova.y == 0) {
+  while (jogadasValidas[random].posicaoAtual.x == -1 && jogadasValidas[random].posicaoAtual.y == -1 && jogadasValidas[random].posicaoNova.x == -1 && jogadasValidas[random].posicaoNova.y == -1) {
     random = rand() % numeroJogadasValidas;
   }
   Jogada jogada = jogadasValidas[random];
@@ -407,7 +428,7 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
   free(coordenadasPecasPretas);
   free(jogadasValidas);
   free(heuristicas);
-
+  free(tabuleiroCopia);
   return jogada;
 }
 
@@ -415,7 +436,8 @@ int minimax(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHumano, Joga
   Coordenada *coordenadasPecasPretas = (Coordenada *)malloc(sizeof(Coordenada) * tabuleiro->pecasPretas);
   Jogada *jogadasValidas = (Jogada *)malloc(sizeof(Jogada) * MAX_JOGADAS);
   Tabuleiro *tabuleiroCopia = (Tabuleiro *)malloc(sizeof(Tabuleiro));
-  printf("Profundidade %d\n", profundidade);
+  // printf("Profundidade %d\n", profundidade);
+
   if (tabuleiroCopia == NULL) {
     printf("Erro ao alocar memoria\n");
     exit(1);
@@ -424,59 +446,92 @@ int minimax(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHumano, Joga
     printf("Erro ao alocar memoria\n");
     exit(1);
   }
-  pegarCoordenadasPecasPretas(tabuleiro, coordenadasPecasPretas);
-  verificarPossiveisJogadas(tabuleiro, coordenadasPecasPretas, jogadasValidas);
 
-  if (profundidade == 0) {
-    int heuristica = pegarHeuristica(tabuleiroCopia);
-    free(coordenadasPecasPretas);
-    free(jogadasValidas);
-    free(tabuleiroCopia);
-    printf("Heuristica %d\n", heuristica);
-    return heuristica;
+  // imprimirTabuleiro(tabuleiro);
+  pegarCoordenadasPecasPretas(tabuleiro, coordenadasPecasPretas);
+  // for (int i = 0; i < tabuleiro->pecasPretas; i++) {
+  //   printf("Coordenada %d %d\n", coordenadasPecasPretas[i].x, coordenadasPecasPretas[i].y);
+  // }
+
+  // clear jogadasValidas
+  for (int i = 0; i < MAX_JOGADAS; i++) {
+    jogadasValidas[i].posicaoAtual.x = -1;
+    jogadasValidas[i].posicaoAtual.y = -1;
+    jogadasValidas[i].posicaoNova.x = -1;
+    jogadasValidas[i].posicaoNova.y = -1;
   }
 
+  verificarPossiveisJogadas(tabuleiro, coordenadasPecasPretas, jogadasValidas);
+  // printf("\n");
   int numeroJogadasValidas = 0;
+
   for (int i = 0; i < MAX_JOGADAS; i++) {
-    if (jogadasValidas[i].posicaoAtual.x != 0 && jogadasValidas[i].posicaoAtual.y != 0 && jogadasValidas[i].posicaoNova.x != 0 && jogadasValidas[i].posicaoNova.y != 0) {
-      numeroJogadasValidas++;
+    if (jogadasValidas[i].posicaoAtual.x != jogadasValidas[i].posicaoNova.x && jogadasValidas[i].posicaoAtual.y != jogadasValidas[i].posicaoNova.y) {
+      if (jogadasValidas[i].posicaoAtual.x >= 0 && jogadasValidas[i].posicaoAtual.y >= 0 && jogadasValidas[i].posicaoNova.x >= 0 && jogadasValidas[i].posicaoNova.y >= 0) {
+        if (jogadasValidas[i].posicaoAtual.x < N && jogadasValidas[i].posicaoAtual.y < N && jogadasValidas[i].posicaoNova.x < N && jogadasValidas[i].posicaoNova.y < N) {
+          numeroJogadasValidas++;
+        }
+      }
     }
   }
 
   printf("Numero de jogadas validas %d\n", numeroJogadasValidas);
 
+  for (int i = 0; i < numeroJogadasValidas; i++) {
+    printf("Jogada %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
+  }
+  printf("\n----\n");
+
+  if (profundidade == 0) {
+    int heuristica = pegarHeuristica(tabuleiro);
+    free(coordenadasPecasPretas);
+    free(jogadasValidas);
+    free(tabuleiroCopia);
+    return heuristica;
+  }
+
   int inicial = 0;
 
   if (maximizando == 1) {
-    memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
     for (int i = 0; i < numeroJogadasValidas; i++) {
+      memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
+      // printf("Jogada MAX %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
       moverPeca(tabuleiroCopia, jogador, jogadasValidas[i].posicaoAtual, jogadasValidas[i].posicaoNova, &lado->cor);
-      int valor = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, 0, profundidade - 1, alpha, beta);
+      if (maximizando == 1) {
+        maximizando = 0;
+      } else {
+        maximizando = 1;
+      }
+      int valor = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, profundidade - 1, alpha, beta);
       inicial = max(valor, inicial);
-      alpha = max(alpha, valor);
-      if (beta <= alpha) {
+      alpha = max(inicial, alpha);
+      if (alpha >= beta) {
         break;
       }
     }
-    free(tabuleiroCopia);
   } else {
     inicial = 1000;
-    memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
     for (int i = 0; i < numeroJogadasValidas; i++) {
+      memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
+      // printf("Jogada MIN %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
       moverPeca(tabuleiroCopia, jogador, jogadasValidas[i].posicaoAtual, jogadasValidas[i].posicaoNova, &lado->cor);
-      int valor = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, 1, profundidade - 1, alpha, beta);
+      if (maximizando == 1) {
+        maximizando = 0;
+      } else {
+        maximizando = 1;
+      }
+      int valor = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, profundidade - 1, alpha, beta);
       inicial = min(valor, inicial);
-      beta = min(beta, valor);
-      if (beta <= alpha) {
+      beta = min(beta, inicial);
+      if (alpha >= beta) {
         break;
       }
     }
-    free(tabuleiroCopia);
   }
 
   free(coordenadasPecasPretas);
   free(jogadasValidas);
-
+  free(tabuleiroCopia);
   return inicial;
 }
 
