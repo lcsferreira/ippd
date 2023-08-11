@@ -1,6 +1,7 @@
 #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define N 8
@@ -380,7 +381,7 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
   for (int i = 0; i < numeroJogadasValidas; i++) {
     memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
     moverPeca(tabuleiroCopia, jogador, jogadasValidas[i].posicaoAtual, jogadasValidas[i].posicaoNova, &lado->cor);
-    heuristicas[i] = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, 3, alpha, beta);
+    heuristicas[i] = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, 2, alpha, beta);
     // printf("Heuristica avaliada %d\n", heuristicas[i]);
   }
 
@@ -584,10 +585,8 @@ int main() {
   while (!gameover) {
     if (jogador_da_rodada == 1) {
       printf("Vez do Computador\n");
-
       Jogada jogada = minimaxStart(&tabuleiro, &jogadorMaquina, &jogadorHumano, 1);
       printf("Mover peca %d %d para %d %d\n", jogada.posicaoAtual.x, jogada.posicaoAtual.y, jogada.posicaoNova.x, jogada.posicaoNova.y);
-
       moverPeca(&tabuleiro, &jogadorMaquina, jogada.posicaoAtual, jogada.posicaoNova, &jogador_da_rodada);
       imprimirTabuleiro(&tabuleiro);
     } else {
