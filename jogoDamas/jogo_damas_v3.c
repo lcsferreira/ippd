@@ -5,8 +5,8 @@
 #include <time.h>
 
 #define N 8
-#define MAX_JOGADAS 30
-#define MAX_THREADS 8
+#define MAX_JOGADAS 20
+#define MAX_THREADS 4
 #define max(a, b) a > b ? a : b
 #define min(a, b) a < b ? a : b
 #define preto 1
@@ -247,9 +247,9 @@ void verificarPossiveisJogadas(Tabuleiro *tabuleiro, Coordenada *coordenadasPeca
   // para cada peca preta, verificar as possiveis jogadas (diagonal superior esquerda, diagonal superior direita, diagonal inferior esquerda, diagonal inferior direita)
   // verificar as jogadas de captura (diagonal superior esquerda, diagonal superior direita, diagonal inferior esquerda, diagonal inferior direita)
   // se a posicao estiver vazia, adicionar na lista de possiveis jogadas
-  int k = 0;
 
-#pragma omp parallel
+  int k = 0;
+#pragma omp parallel firstprivate(k, jogadasValidas)
   {
 #pragma omp for schedule(dynamic)
     for (int i = 0; i < tabuleiro->pecasPretas; i++) {
@@ -381,7 +381,7 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
   for (int i = 0; i < numeroJogadasValidas; i++) {
     memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
     moverPeca(tabuleiroCopia, jogador, jogadasValidas[i].posicaoAtual, jogadasValidas[i].posicaoNova, &lado->cor);
-    heuristicas[i] = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, 2, alpha, beta);
+    heuristicas[i] = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, 3, alpha, beta);
     // printf("Heuristica avaliada %d\n", heuristicas[i]);
   }
 
@@ -495,12 +495,12 @@ int minimax(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHumano, Joga
       }
     }
   }
-  // printf("Numero de jogadas validas %d\n", numeroJogadasValidas);
+//   printf("Numero de jogadas validas %d\n", numeroJogadasValidas);
 
-  // for (int i = 0; i < numeroJogadasValidas; i++) {
-  //   printf("Jogada %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
-  // }
-  // printf("\n----\n");
+//   for (int i = 0; i < numeroJogadasValidas; i++) {
+//     printf("Jogada %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
+//   }
+//   printf("\n----\n");
 
   if (profundidade == 0) {
     int heuristica = pegarHeuristica(tabuleiro);
@@ -513,9 +513,6 @@ int minimax(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHumano, Joga
   int inicial = 0;
 
   if (maximizando == 1) {
-#pragma omp parallel
-    {
-#pragma omp for schedule(dynamic)
       for (int i = 0; i < numeroJogadasValidas; i++) {
         memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
         // printf("Jogada MAX %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
@@ -529,16 +526,11 @@ int minimax(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHumano, Joga
         inicial = max(valor, inicial);
         alpha = max(inicial, alpha);
         if (alpha >= beta) {
-#pragma omp cancel for
+            break;
         }
       }
-    }
   } else {
     inicial = 1000;
-#pragma omp parallel
-    {
-#pragma omp for schedule(dynamic)
-
       for (int i = 0; i < numeroJogadasValidas; i++) {
         memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
         // printf("Jogada MIN %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
@@ -552,15 +544,14 @@ int minimax(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHumano, Joga
         inicial = min(valor, inicial);
         beta = min(beta, inicial);
         if (alpha >= beta) {
-#pragma omp cancel for
+            break;
         }
       }
-    }
   }
 
-  free(coordenadasPecasPretas);
-  free(jogadasValidas);
-  free(tabuleiroCopia);
+//   free(coordenadasPecasPretas);
+//   free(jogadasValidas);
+//   free(tabuleiroCopia);
   return inicial;
 }
 
@@ -580,7 +571,7 @@ int main() {
   imprimirTabuleiro(&tabuleiro);
   inicializarJogador(&jogadorMaquina, 1);
   inicializarJogador(&jogadorHumano, 2);
-  omp_set_num_threads(MAX_THREADS);
+//   omp_set_num_threads(MAX_THREADS);
 
   while (!gameover) {
     if (jogador_da_rodada == 1) {
