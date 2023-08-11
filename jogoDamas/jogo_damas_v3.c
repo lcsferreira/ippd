@@ -1,12 +1,11 @@
 #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 #define N 8
 #define MAX_JOGADAS 30
-#define MAX_THREADS 4
+#define MAX_THREADS 8
 #define max(a, b) a > b ? a : b
 #define min(a, b) a < b ? a : b
 #define preto 1
@@ -234,8 +233,6 @@ void pegarCoordenadasPecasPretas(Tabuleiro *tabuleiro, Coordenada *coordenadasPe
   int i, j;
   int k = 0;
 
-
-
   for (i = 0; i < N; i++)
     for (j = 0; j < N; j++)
       if (tabuleiro->tabuleiro[i][j] == 1) {
@@ -251,55 +248,56 @@ void verificarPossiveisJogadas(Tabuleiro *tabuleiro, Coordenada *coordenadasPeca
   // se a posicao estiver vazia, adicionar na lista de possiveis jogadas
   int k = 0;
 
-  #pragma omp parallel
+#pragma omp parallel
   {
-    #pragma omp for schedule(dynamic)
-      for (int i = 0; i < tabuleiro->pecasPretas; i++) {
-        if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x][coordenadasPecasPretas[i].y] != 0) {
-          if (!(coordenadasPecasPretas[i].x + 1 >= N || coordenadasPecasPretas[i].y - 1 < 0) && !(coordenadasPecasPretas[i].x + 1 >= N || coordenadasPecasPretas[i].y + 1 >= N)) {
-            // JOGADA
-            if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y - 1] == 0) {
+#pragma omp for schedule(dynamic)
+    for (int i = 0; i < tabuleiro->pecasPretas; i++) {
+      // printf("Thread %d: i = %d\n", omp_get_thread_num(), i);
+      if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x][coordenadasPecasPretas[i].y] != 0) {
+        if (!(coordenadasPecasPretas[i].x + 1 >= N || coordenadasPecasPretas[i].y - 1 < 0) && !(coordenadasPecasPretas[i].x + 1 >= N || coordenadasPecasPretas[i].y + 1 >= N)) {
+          // JOGADA
+          if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y - 1] == 0) {
+            // adicionar na lista de possiveis jogadas
+            jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+            jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+            jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 1;
+            jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y - 1;
+            k++;
+          }
+          if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y + 1] == 0) {
+            // adicionar na lista de possiveis jogadas
+            jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+            jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+            jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 1;
+            jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 1;
+            k++;
+          }
+        }
+        if (!(coordenadasPecasPretas[i].x + 2 >= N || coordenadasPecasPretas[i].y - 2 < 0) && !(coordenadasPecasPretas[i].x + 2 >= N || coordenadasPecasPretas[i].y + 2 >= N)) {
+          // JOGADA
+          if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 2][coordenadasPecasPretas[i].y - 2] == 0) {
+            if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y - 1] == 2) {
               // adicionar na lista de possiveis jogadas
               jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
               jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
-              jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 1;
-              jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y - 1;
-              k++;
-            }
-            if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y + 1] == 0) {
-              // adicionar na lista de possiveis jogadas
-              jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
-              jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
-              jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 1;
-              jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 1;
+              jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 2;
+              jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y - 2;
               k++;
             }
           }
-          if (!(coordenadasPecasPretas[i].x + 2 >= N || coordenadasPecasPretas[i].y - 2 < 0) && !(coordenadasPecasPretas[i].x + 2 >= N || coordenadasPecasPretas[i].y + 2 >= N)) {
-            // JOGADA
-            if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 2][coordenadasPecasPretas[i].y - 2] == 0) {
-              if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y - 1] == 2) {
-                // adicionar na lista de possiveis jogadas
-                jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
-                jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
-                jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 2;
-                jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y - 2;
-                k++;
-              }
-            }
-            if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 2][coordenadasPecasPretas[i].y + 2] == 0) {
-              if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y + 1] == 2) {
-                // adicionar na lista de possiveis jogadas
-                jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
-                jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
-                jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 2;
-                jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 2;
-                k++;
-              }
+          if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 2][coordenadasPecasPretas[i].y + 2] == 0) {
+            if (tabuleiro->tabuleiro[coordenadasPecasPretas[i].x + 1][coordenadasPecasPretas[i].y + 1] == 2) {
+              // adicionar na lista de possiveis jogadas
+              jogadasValidas[k].posicaoAtual.x = coordenadasPecasPretas[i].x;
+              jogadasValidas[k].posicaoAtual.y = coordenadasPecasPretas[i].y;
+              jogadasValidas[k].posicaoNova.x = coordenadasPecasPretas[i].x + 2;
+              jogadasValidas[k].posicaoNova.y = coordenadasPecasPretas[i].y + 2;
+              k++;
             }
           }
         }
       }
+    }
   }
 }
 
@@ -333,16 +331,16 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
 
   pegarCoordenadasPecasPretas(tabuleiro, coordenadasPecasPretas);
 
-  // limpa a lista de jogadas validas
-  #pragma omp parallel
+// limpa a lista de jogadas validas
+#pragma omp parallel
   {
-    #pragma omp for schedule(dynamic)
-      for (int i = 0; i < MAX_JOGADAS; i++) {
-        jogadasValidas[i].posicaoAtual.x = -1;
-        jogadasValidas[i].posicaoAtual.y = -1;
-        jogadasValidas[i].posicaoNova.x = -1;
-        jogadasValidas[i].posicaoNova.y = -1;
-      }
+#pragma omp for schedule(dynamic)
+    for (int i = 0; i < MAX_JOGADAS; i++) {
+      jogadasValidas[i].posicaoAtual.x = -1;
+      jogadasValidas[i].posicaoAtual.y = -1;
+      jogadasValidas[i].posicaoNova.x = -1;
+      jogadasValidas[i].posicaoNova.y = -1;
+    }
   }
 
   verificarPossiveisJogadas(tabuleiro, coordenadasPecasPretas, jogadasValidas);
@@ -365,18 +363,18 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
 
   int numeroJogadasValidas = 0;
 
-  #pragma omp parallel
+#pragma omp parallel
   {
-    #pragma omp for schedule(dynamic)
-      for (int i = 0; i < MAX_JOGADAS; i++) {
-        if (jogadasValidas[i].posicaoAtual.x != jogadasValidas[i].posicaoNova.x && jogadasValidas[i].posicaoAtual.y != jogadasValidas[i].posicaoNova.y) {
-          if (jogadasValidas[i].posicaoAtual.x >= 0 && jogadasValidas[i].posicaoAtual.y >= 0 && jogadasValidas[i].posicaoNova.x >= 0 && jogadasValidas[i].posicaoNova.y >= 0) {
-            if (jogadasValidas[i].posicaoAtual.x < N && jogadasValidas[i].posicaoAtual.y < N && jogadasValidas[i].posicaoNova.x < N && jogadasValidas[i].posicaoNova.y < N) {
-              numeroJogadasValidas++;
-            }
+#pragma omp for schedule(dynamic)
+    for (int i = 0; i < MAX_JOGADAS; i++) {
+      if (jogadasValidas[i].posicaoAtual.x != jogadasValidas[i].posicaoNova.x && jogadasValidas[i].posicaoAtual.y != jogadasValidas[i].posicaoNova.y) {
+        if (jogadasValidas[i].posicaoAtual.x >= 0 && jogadasValidas[i].posicaoAtual.y >= 0 && jogadasValidas[i].posicaoNova.x >= 0 && jogadasValidas[i].posicaoNova.y >= 0) {
+          if (jogadasValidas[i].posicaoAtual.x < N && jogadasValidas[i].posicaoAtual.y < N && jogadasValidas[i].posicaoNova.x < N && jogadasValidas[i].posicaoNova.y < N) {
+            numeroJogadasValidas++;
           }
         }
       }
+    }
   }
 
   for (int i = 0; i < numeroJogadasValidas; i++) {
@@ -390,45 +388,45 @@ Jogada minimaxStart(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHuma
 
   int max_heuristica = -1000;
 
-  #pragma omp parallel
+#pragma omp parallel
   {
-    #pragma omp for schedule(dynamic)
-      for (int i = 0; i < numeroJogadasValidas; i++) {
-        if (heuristicas[i] >= max_heuristica) {
-          max_heuristica = heuristicas[i];
-        }
+#pragma omp for schedule(dynamic)
+    for (int i = 0; i < numeroJogadasValidas; i++) {
+      if (heuristicas[i] >= max_heuristica) {
+        max_heuristica = heuristicas[i];
       }
+    }
   }
 
-  #pragma omp parallel
+#pragma omp parallel
   {
-    #pragma omp for schedule(dynamic)
-      for (int i = 0; i < numeroJogadasValidas; i++) {
-        if (heuristicas[i] < max_heuristica) {
-          jogadasValidas[i].posicaoAtual.x = -1;
-          jogadasValidas[i].posicaoAtual.y = -1;
-          jogadasValidas[i].posicaoNova.x = -1;
-          jogadasValidas[i].posicaoNova.y = -1;
+#pragma omp for schedule(dynamic)
+    for (int i = 0; i < numeroJogadasValidas; i++) {
+      if (heuristicas[i] < max_heuristica) {
+        jogadasValidas[i].posicaoAtual.x = -1;
+        jogadasValidas[i].posicaoAtual.y = -1;
+        jogadasValidas[i].posicaoNova.x = -1;
+        jogadasValidas[i].posicaoNova.y = -1;
 
-          heuristicas[i] = -1000;
-        }
+        heuristicas[i] = -1000;
       }
+    }
   }
 
   numeroJogadasValidas = 0;
 
-  #pragma omp parallel
+#pragma omp parallel
   {
-    #pragma omp for schedule(dynamic)
-      for (int i = 0; i < MAX_JOGADAS; i++) {
-        if (jogadasValidas[i].posicaoAtual.x != jogadasValidas[i].posicaoNova.x && jogadasValidas[i].posicaoAtual.y != jogadasValidas[i].posicaoNova.y) {
-          if (jogadasValidas[i].posicaoAtual.x >= 0 && jogadasValidas[i].posicaoAtual.y >= 0 && jogadasValidas[i].posicaoNova.x >= 0 && jogadasValidas[i].posicaoNova.y >= 0) {
-            if (jogadasValidas[i].posicaoAtual.x < N && jogadasValidas[i].posicaoAtual.y < N && jogadasValidas[i].posicaoNova.x < N && jogadasValidas[i].posicaoNova.y < N) {
-              numeroJogadasValidas++;
-            }
+#pragma omp for schedule(dynamic)
+    for (int i = 0; i < MAX_JOGADAS; i++) {
+      if (jogadasValidas[i].posicaoAtual.x != jogadasValidas[i].posicaoNova.x && jogadasValidas[i].posicaoAtual.y != jogadasValidas[i].posicaoNova.y) {
+        if (jogadasValidas[i].posicaoAtual.x >= 0 && jogadasValidas[i].posicaoAtual.y >= 0 && jogadasValidas[i].posicaoNova.x >= 0 && jogadasValidas[i].posicaoNova.y >= 0) {
+          if (jogadasValidas[i].posicaoAtual.x < N && jogadasValidas[i].posicaoAtual.y < N && jogadasValidas[i].posicaoNova.x < N && jogadasValidas[i].posicaoNova.y < N) {
+            numeroJogadasValidas++;
           }
         }
       }
+    }
   }
 
   srand(time(NULL));
@@ -463,38 +461,38 @@ int minimax(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHumano, Joga
 
   // imprimirTabuleiro(tabuleiro);
   pegarCoordenadasPecasPretas(tabuleiro, coordenadasPecasPretas);
-  // for (int i = 0; i < tabuleiro->pecasPretas; i++) {
-  //   printf("Coordenada %d %d\n", coordenadasPecasPretas[i].x, coordenadasPecasPretas[i].y);
-  // }
+// for (int i = 0; i < tabuleiro->pecasPretas; i++) {
+//   printf("Coordenada %d %d\n", coordenadasPecasPretas[i].x, coordenadasPecasPretas[i].y);
+// }
 
-  // clear jogadasValidas
-  #pragma omp parallel
+// clear jogadasValidas
+#pragma omp parallel
   {
-    #pragma omp for schedule(dynamic)
-      for (int i = 0; i < MAX_JOGADAS; i++) {
-        jogadasValidas[i].posicaoAtual.x = -1;
-        jogadasValidas[i].posicaoAtual.y = -1;
-        jogadasValidas[i].posicaoNova.x = -1;
-        jogadasValidas[i].posicaoNova.y = -1;
-      }
+#pragma omp for schedule(dynamic)
+    for (int i = 0; i < MAX_JOGADAS; i++) {
+      jogadasValidas[i].posicaoAtual.x = -1;
+      jogadasValidas[i].posicaoAtual.y = -1;
+      jogadasValidas[i].posicaoNova.x = -1;
+      jogadasValidas[i].posicaoNova.y = -1;
+    }
   }
 
   verificarPossiveisJogadas(tabuleiro, coordenadasPecasPretas, jogadasValidas);
   // printf("\n");
   int numeroJogadasValidas = 0;
 
-  #pragma omp parallel
+#pragma omp parallel
   {
-    #pragma omp for schedule(dynamic)
-      for (int i = 0; i < MAX_JOGADAS; i++) {
-        if (jogadasValidas[i].posicaoAtual.x != jogadasValidas[i].posicaoNova.x && jogadasValidas[i].posicaoAtual.y != jogadasValidas[i].posicaoNova.y) {
-          if (jogadasValidas[i].posicaoAtual.x >= 0 && jogadasValidas[i].posicaoAtual.y >= 0 && jogadasValidas[i].posicaoNova.x >= 0 && jogadasValidas[i].posicaoNova.y >= 0) {
-            if (jogadasValidas[i].posicaoAtual.x < N && jogadasValidas[i].posicaoAtual.y < N && jogadasValidas[i].posicaoNova.x < N && jogadasValidas[i].posicaoNova.y < N) {
-              numeroJogadasValidas++;
-            }
+#pragma omp for schedule(dynamic)
+    for (int i = 0; i < MAX_JOGADAS; i++) {
+      if (jogadasValidas[i].posicaoAtual.x != jogadasValidas[i].posicaoNova.x && jogadasValidas[i].posicaoAtual.y != jogadasValidas[i].posicaoNova.y) {
+        if (jogadasValidas[i].posicaoAtual.x >= 0 && jogadasValidas[i].posicaoAtual.y >= 0 && jogadasValidas[i].posicaoNova.x >= 0 && jogadasValidas[i].posicaoNova.y >= 0) {
+          if (jogadasValidas[i].posicaoAtual.x < N && jogadasValidas[i].posicaoAtual.y < N && jogadasValidas[i].posicaoNova.x < N && jogadasValidas[i].posicaoNova.y < N) {
+            numeroJogadasValidas++;
           }
         }
       }
+    }
   }
   // printf("Numero de jogadas validas %d\n", numeroJogadasValidas);
 
@@ -514,47 +512,48 @@ int minimax(Tabuleiro *tabuleiro, Jogador *jogador, Jogador *jogadorHumano, Joga
   int inicial = 0;
 
   if (maximizando == 1) {
-    #pragma omp parallel
+#pragma omp parallel
     {
-      #pragma omp for schedule(dynamic)
-        for (int i = 0; i < numeroJogadasValidas; i++) {
-          memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
-          // printf("Jogada MAX %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
-          moverPeca(tabuleiroCopia, jogador, jogadasValidas[i].posicaoAtual, jogadasValidas[i].posicaoNova, &lado->cor);
-          if (maximizando == 1) {
-            maximizando = 0;
-          } else {
-            maximizando = 1;
-          }
-          int valor = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, profundidade - 1, alpha, beta);
-          inicial = max(valor, inicial);
-          alpha = max(inicial, alpha);
-          if (alpha >= beta) {
-            break;
-          }
+#pragma omp for schedule(dynamic)
+      for (int i = 0; i < numeroJogadasValidas; i++) {
+        memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
+        // printf("Jogada MAX %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
+        moverPeca(tabuleiroCopia, jogador, jogadasValidas[i].posicaoAtual, jogadasValidas[i].posicaoNova, &lado->cor);
+        if (maximizando == 1) {
+          maximizando = 0;
+        } else {
+          maximizando = 1;
         }
+        int valor = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, profundidade - 1, alpha, beta);
+        inicial = max(valor, inicial);
+        alpha = max(inicial, alpha);
+        if (alpha >= beta) {
+#pragma omp cancel for
+        }
+      }
     }
   } else {
     inicial = 1000;
-    #pragma omp parallel
+#pragma omp parallel
     {
-      #pragma omp for schedule(dynamic)
-        for (int i = 0; i < numeroJogadasValidas; i++) {
-          memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
-          // printf("Jogada MIN %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
-          moverPeca(tabuleiroCopia, jogador, jogadasValidas[i].posicaoAtual, jogadasValidas[i].posicaoNova, &lado->cor);
-          if (maximizando == 1) {
-            maximizando = 0;
-          } else {
-            maximizando = 1;
-          }
-          int valor = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, profundidade - 1, alpha, beta);
-          inicial = min(valor, inicial);
-          beta = min(beta, inicial);
-          if (alpha >= beta) {
-            break;
-          }
+#pragma omp for schedule(dynamic)
+
+      for (int i = 0; i < numeroJogadasValidas; i++) {
+        memcpy(tabuleiroCopia, tabuleiro, sizeof(Tabuleiro));
+        // printf("Jogada MIN %d %d para %d %d\n", jogadasValidas[i].posicaoAtual.x, jogadasValidas[i].posicaoAtual.y, jogadasValidas[i].posicaoNova.x, jogadasValidas[i].posicaoNova.y);
+        moverPeca(tabuleiroCopia, jogador, jogadasValidas[i].posicaoAtual, jogadasValidas[i].posicaoNova, &lado->cor);
+        if (maximizando == 1) {
+          maximizando = 0;
+        } else {
+          maximizando = 1;
         }
+        int valor = minimax(tabuleiroCopia, jogador, jogadorHumano, lado, maximizando, profundidade - 1, alpha, beta);
+        inicial = min(valor, inicial);
+        beta = min(beta, inicial);
+        if (alpha >= beta) {
+#pragma omp cancel for
+        }
+      }
     }
   }
 
@@ -580,6 +579,7 @@ int main() {
   imprimirTabuleiro(&tabuleiro);
   inicializarJogador(&jogadorMaquina, 1);
   inicializarJogador(&jogadorHumano, 2);
+  omp_set_num_threads(MAX_THREADS);
 
   while (!gameover) {
     if (jogador_da_rodada == 1) {
