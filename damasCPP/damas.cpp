@@ -111,7 +111,7 @@ void Jogo::geraTodosOsMovimentos(Lado lado, vector<Jogada>& jogadas){
   }
 
   if(jogadas.empty()){
-    cout<< "Sem pulos" << endl;
+    // cout<< "Sem pulos" << endl;
     for (int i=0; i<8; i++){
       for (int j=0; j<8; j++){
         Ponto p = {i,j};
@@ -128,28 +128,31 @@ void Jogo::geraJogadasValidas(Ponto p, Lado lado, vector<Jogada> &jogadas){
   Peca peca = tabuleiro[p.x][p.y];
 
   if(peca == VAZIO){
-    cout << "Ponto vazio" << endl;
+    // cout << "Ponto vazio" << endl;
     throw Falha();
   }
 
-  cout << "Ponto: " << p.x << " " << p.y << endl;
+  // cout << "Ponto: " << p.x << " " << p.y << endl;
 
   if (peca == BRANCA || peca == PRETA){
-    int mudarLinha = peca == PRETA ? -1 : 1;
+    int mudarLinha = peca == PRETA ? 1 : -1;
     int novaLinha = p.x + mudarLinha;
     // cout<< "Nova linha: " << novaLinha << endl;
 
     if(novaLinha >=0 && novaLinha < 8){
       int novaColuna = p.y + 1;
-      cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
+      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
+      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna < 8 && getPeca(novaLinha, novaColuna) == VAZIO){
-        cout << "Jogada valida" << endl;
+        // cout << "Jogada valida" << endl;
         jogadas.push_back({p, novaLinha, novaColuna});
       }
       novaColuna = p.y - 1;
-      cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
+      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
+
+      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna >= 0 && getPeca(novaLinha, novaColuna) == VAZIO){
-        cout << "Jogada valida" << endl;
+        // cout << "Jogada valida" << endl;
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
@@ -158,16 +161,20 @@ void Jogo::geraJogadasValidas(Ponto p, Lado lado, vector<Jogada> &jogadas){
     int novaLinha = p.x + 1;
     if(novaLinha < 8){
       int novaColuna = p.y + 1;
-      cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
+      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
+
+      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna < 8 && getPeca(novaLinha, novaColuna) == VAZIO){
-        cout << "Jogada valida" << endl;
+        // cout << "Jogada valida" << endl;
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
       novaColuna = p.y - 1;
-      cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
+      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
+
+      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna >= 0 && getPeca(novaLinha, novaColuna) == VAZIO){
-        cout << "Jogada valida" << endl;
+        // cout << "Jogada valida" << endl;
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
@@ -175,22 +182,26 @@ void Jogo::geraJogadasValidas(Ponto p, Lado lado, vector<Jogada> &jogadas){
     novaLinha = p.x - 1;
     if(novaLinha >= 0){
       int novaColuna = p.y + 1;
-      cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
+      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
+
+      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna < 8 && getPeca(novaLinha, novaColuna) == VAZIO){
-        cout << "Jogada valida" << endl;
+        // cout << "Jogada valida" << endl;
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
       novaColuna = p.y - 1;
-      cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
+      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
+
+      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna >= 0 && getPeca(novaLinha, novaColuna) == VAZIO){
-        cout << "Jogada valida" << endl;
+        // cout << "Jogada valida" << endl;
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
     }
   }
-  cout << "Jogadas validas: " << jogadas.size() << endl;
+  // cout << "Jogadas validas: " << jogadas.size() << endl;
 }
 
 void Jogo::geraJogadasDePuloValidas(Ponto p, Lado lado, vector<Jogada> &jogadas){
