@@ -12,12 +12,12 @@ Jogo::Jogo(){
   montarTabuleiro();
 }
 
-Jogo::Jogo(Peca** tabuleiro){
+Jogo::Jogo(Peca** tabuleiro_novo){
   num_pecas_brancas = 0;
   num_pecas_pretas = 0;
   num_damas_brancas = 0;
   num_damas_pretas = 0;
-  tabuleiro = tabuleiro;
+  tabuleiro = tabuleiro_novo;
 
   for(int i = 0; i < 8; i++){
     for(int j = 0; j < 8; j++){
@@ -56,20 +56,23 @@ void Jogo::montarTabuleiro(){
     tabuleiro[i] = new Peca[8];
   }
   for(int i = 0; i < 8; i++){
-    for(int j = 0; j < 8; j++){
-      if(i < 3){
-        if((i + j) % 2 == 0){
-          tabuleiro[i][j] = PRETA;
-        }else{
-          tabuleiro[i][j] = VAZIO;
-        }
-      }else if(i > 4){
-        if((i + j) % 2 == 0){
-          tabuleiro[i][j] = BRANCA;
-        }else{
-          tabuleiro[i][j] = VAZIO;
-        }
-      }else{
+    int primeiro = 0;
+    if(i % 2 == 0){
+      primeiro = 1;
+    }
+    Peca peca =VAZIO;
+    if(i <= 2){
+      peca = BRANCA;
+    }else if(i >= 5){
+      peca = PRETA;
+    }
+    for (int j = primeiro; j < 8; j+=2){
+      tabuleiro[i][j] = peca;
+    }
+  }
+  for (int i = 0; i< 8; i++){
+    for (int j = 0; j<8; j++){
+      if(!(tabuleiro[i][j] == BRANCA || tabuleiro[i][j] == PRETA) || (i > 2 && i < 5)){
         tabuleiro[i][j] = VAZIO;
       }
     }
@@ -111,7 +114,7 @@ void Jogo::geraTodosOsMovimentos(Lado lado, vector<Jogada>& jogadas){
   }
 
   if(jogadas.empty()){
-    // cout<< "Sem pulos" << endl;
+
     for (int i=0; i<8; i++){
       for (int j=0; j<8; j++){
         Ponto p = {i,j};
@@ -128,31 +131,26 @@ void Jogo::geraJogadasValidas(Ponto p, Lado lado, vector<Jogada> &jogadas){
   Peca peca = tabuleiro[p.x][p.y];
 
   if(peca == VAZIO){
-    // cout << "Ponto vazio" << endl;
     throw Falha();
   }
 
-  // cout << "Ponto: " << p.x << " " << p.y << endl;
 
   if (peca == BRANCA || peca == PRETA){
-    int mudarLinha = peca == PRETA ? 1 : -1;
+    int mudarLinha = peca == PRETA ? -1 : 1;
     int novaLinha = p.x + mudarLinha;
-    // cout<< "Nova linha: " << novaLinha << endl;
+
 
     if(novaLinha >=0 && novaLinha < 8){
       int novaColuna = p.y + 1;
-      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
-      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
+
       if(novaColuna < 8 && getPeca(novaLinha, novaColuna) == VAZIO){
-        // cout << "Jogada valida" << endl;
+
         jogadas.push_back({p, novaLinha, novaColuna});
       }
       novaColuna = p.y - 1;
-      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
 
-      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna >= 0 && getPeca(novaLinha, novaColuna) == VAZIO){
-        // cout << "Jogada valida" << endl;
+
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
@@ -161,20 +159,14 @@ void Jogo::geraJogadasValidas(Ponto p, Lado lado, vector<Jogada> &jogadas){
     int novaLinha = p.x + 1;
     if(novaLinha < 8){
       int novaColuna = p.y + 1;
-      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
-
-      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna < 8 && getPeca(novaLinha, novaColuna) == VAZIO){
-        // cout << "Jogada valida" << endl;
+
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
       novaColuna = p.y - 1;
-      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
-
-      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna >= 0 && getPeca(novaLinha, novaColuna) == VAZIO){
-        // cout << "Jogada valida" << endl;
+
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
@@ -182,26 +174,19 @@ void Jogo::geraJogadasValidas(Ponto p, Lado lado, vector<Jogada> &jogadas){
     novaLinha = p.x - 1;
     if(novaLinha >= 0){
       int novaColuna = p.y + 1;
-      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
-
-      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna < 8 && getPeca(novaLinha, novaColuna) == VAZIO){
-        // cout << "Jogada valida" << endl;
+
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
       novaColuna = p.y - 1;
-      // cout << "Posicao: " << novaLinha << " " << novaColuna << endl;
-
-      // cout << "Peca: " << getPeca(novaLinha, novaColuna) << endl;
       if(novaColuna >= 0 && getPeca(novaLinha, novaColuna) == VAZIO){
-        // cout << "Jogada valida" << endl;
+
 
         jogadas.push_back({p, novaLinha, novaColuna});
       }
     }
   }
-  // cout << "Jogadas validas: " << jogadas.size() << endl;
 }
 
 void Jogo::geraJogadasDePuloValidas(Ponto p, Lado lado, vector<Jogada> &jogadas){
@@ -286,7 +271,7 @@ Status Jogo::fazJogada(Jogada jogada, Lado lado){
   bool jogada_na_lista = false;
   int tam = jogadas_possiveis.size();
 
-  for(int i=0; i<tam; i++){
+  for(int i=0; i<tam && !jogada_na_lista; i++){
     jogada_na_lista = verificaJogadaIgual(jogada, jogadas_possiveis[i]);
   }
 
@@ -324,6 +309,7 @@ Status Jogo::fazJogada(Jogada jogada, Lado lado){
     }
     return COMPLETO;
   }else{
+    cout << "destino invalido" << endl;
     return FAIL_DESTINO_INVALIDO;
   }
 }
@@ -337,9 +323,11 @@ bool Jogo::verificaJogadaIgual(Jogada jogada1, Jogada jogada2){
 
 Jogo* Jogo::clonaJogo(){
   Peca** tabuleiro_novo = new Peca*[8];
+
   for(int i = 0; i < 8; i++){
     tabuleiro_novo[i] = new Peca[8];
   }
+
   for(int i = 0; i < 8; i++){
     for(int j = 0; j < 8; j++){
       tabuleiro_novo[i][j] = tabuleiro[i][j];
@@ -371,9 +359,9 @@ void Jogo::imprimeTabuleiro(){
   cout << "\n\n b = Peca Branca / p = Peca Preta / B = Dama Branca / P = Dama Preta" << endl;
 }
 
-Jogador::Jogador(Lado lado, string nome){
-  lado = lado;
-  nome = nome;
+Jogador::Jogador(Lado l, string n){
+  lado = l;
+  nome = n;
 }
 
 Status Jogador::fazJogada(Jogada jogada, Jogo jogo ){
@@ -403,7 +391,7 @@ Jogada IA::inicioMinimax(Jogo jogo, Lado lado, bool maximizando){
   vector<double> heuristicas;
   if(jogadas_possiveis.empty()){
     cout << "Sem movimentos possiveis" << endl;
-    return {-1,-1,-1};
+    return {-1};
   }
 
   Jogo jogo_temp;
@@ -411,7 +399,7 @@ Jogada IA::inicioMinimax(Jogo jogo, Lado lado, bool maximizando){
   for(int i = 0; i<num_jogadas; i++){
     jogo_temp = *jogo.clonaJogo();
     Status status = jogo_temp.fazJogada(jogadas_possiveis[i], lado);
-    heuristicas.push_back(minimax(jogo_temp, lado, profundidade, !maximizando, alpha, beta));
+    heuristicas.push_back(minimax(jogo_temp, trocaLado(lado), profundidade, !maximizando, alpha, beta));
   }
 
   double max_heuristica = -1000;
@@ -499,7 +487,7 @@ void printJogada(Jogada jogada){
 }
 
 void clear(){
-  system("clear");
+  system("CLS");
 }
 
 void Jogar(){
@@ -526,28 +514,25 @@ void Jogar(){
   Status status = COMPLETO;
   while(status != GAME_OVER){
     clear();
-    cout<< "Jogador: " << j1.getNome() << endl;
-    cout << "CPU: " << j2.getNome() << endl;
-    cout << "Jogador: " << jogo.getNumPecasBrancas() << " pecas brancas e " << jogo.getNumDamasBrancas() << " damas brancas" << endl;
-    cout << "CPU: " << jogo.getNumPecasPretas() << " pecas pretas e " << jogo.getNumDamasPretas() << " damas pretas" << endl;
     jogo.imprimeTabuleiro();
     if(!vez_jogador){
       system("pause");
     }
     if(vez_jogador){
       cout << "Sua vez" << endl;
-      vector<Jogada> jogadas_possiveis;
-      jogo.geraTodosOsMovimentos(jogador, jogadas_possiveis);
-      if(jogadas_possiveis.empty()){
+      vector<Jogada> jogadas_jogador;
+      jogo.geraTodosOsMovimentos(j1.getLado(), jogadas_jogador);
+
+      if(jogadas_jogador.empty()){
         cout << "Sem movimentos possiveis" << endl;
         cout << "Voce perdeu" << endl;
         status = GAME_OVER;
         break;
       }else{
-        int num_jogadas = jogadas_possiveis.size();
+        int num_jogadas = jogadas_jogador.size();
         cout << "Jogadas possiveis: " << endl;
         for(int i = 0; i<num_jogadas; i++){
-          printJogada(jogadas_possiveis[i]);
+          printJogada(jogadas_jogador[i]);
           cout << endl;
         }
       }
@@ -566,9 +551,10 @@ void Jogar(){
       vez_jogador = !vez_jogador;
     }else {
       cout << "Vez do computador" << endl;
-      vector<Jogada> jogadas_possiveis;
-      jogo.geraTodosOsMovimentos(cpu, jogadas_possiveis);
-      if(jogadas_possiveis.empty()){
+      vector<Jogada> jogadas_computador;
+
+      jogo.geraTodosOsMovimentos(j2.getLado(), jogadas_computador);
+      if(jogadas_computador.empty()){
         cout << "Sem movimentos possiveis" << endl;
         cout << "Voce ganhou" << endl;
         break;
