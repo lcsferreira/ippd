@@ -3,6 +3,7 @@
 #include <random>
 #include <stdlib.h>
 #include <time.h>
+#include <omp.h>
 #include "damas.h"
 using namespace std;
 
@@ -103,25 +104,45 @@ void Jogo::geraTodosOsMovimentos(Lado lado, vector<Jogada>& jogadas){
   Peca normal = lado == LADO_BRANCO ? BRANCA : PRETA;
   Peca dama = lado == LADO_BRANCO ? DAMA_BRANCA : DAMA_PRETA;
 
-  for (int i=0; i<8; i++){
-    for (int j=0; j<8; j++){
-      Ponto p = {i,j};
-      Peca peca = getPeca(p);
-      if (peca == normal || peca == dama){
-        geraJogadasDePuloValidas(p, lado, jogadas);
-      }
-    }
-  }
+  #pragma omp parallel
+  {
+    vector<Jogada> local_jogadas;
 
-  if(jogadas.empty()){
-
+    #pragma omp for
     for (int i=0; i<8; i++){
       for (int j=0; j<8; j++){
         Ponto p = {i,j};
         Peca peca = getPeca(p);
         if (peca == normal || peca == dama){
-          geraJogadasValidas(p, lado, jogadas);
+          geraJogadasDePuloValidas(p, lado, local_jogadas);
         }
+      }
+    }
+
+    #pragma omp critical
+    {
+      jogadas.insert(jogadas.end(), local_jogadas.begin(), local_jogadas.end());
+    }
+  }
+  if(jogadas.empty()){
+    #pragma omp parallel
+    {
+      vector<Jogada> local_jogadas;
+
+      #pragma omp for
+      for (int i=0; i<8; i++){
+        for (int j=0; j<8; j++){
+          Ponto p = {i,j};
+          Peca peca = getPeca(p);
+          if (peca == normal || peca == dama){
+            geraJogadasValidas(p, lado, local_jogadas);
+          }
+        }
+      }
+
+      #pragma omp critical
+      {
+        jogadas.insert(jogadas.end(), local_jogadas.begin(), local_jogadas.end());
       }
     }
   }
@@ -205,6 +226,8 @@ void Jogo::geraJogadasDePuloValidas(Ponto p, Lado lado, vector<Jogada> &jogadas)
     movimentos_possiveis.push_back({p.x - 2, p.y - 2});
   }
   int tam = movimentos_possiveis.size();
+
+  // #pragma omp parallel for
   for(int i =0; i<tam; i++){
     Ponto temp = movimentos_possiveis[i];
     Jogada jogada = {inicio, temp};
@@ -396,6 +419,7 @@ Jogada IA::inicioMinimax(Jogo jogo, Lado lado, bool maximizando){
 
   Jogo jogo_temp;
   int num_jogadas = jogadas_possiveis.size();
+  // #pragma omp parallel for
   for(int i = 0; i<num_jogadas; i++){
     jogo_temp = *jogo.clonaJogo();
     Status status = jogo_temp.fazJogada(jogadas_possiveis[i], lado);
@@ -410,6 +434,7 @@ Jogada IA::inicioMinimax(Jogo jogo, Lado lado, bool maximizando){
     }
   }
 
+  // #pragma omp parallel for
   for (int i = 0; i < num_heuristicas; i++){
     if(heuristicas[i] < max_heuristica){
       heuristicas.erase(heuristicas.begin() + i);
@@ -425,45 +450,45 @@ Jogada IA::inicioMinimax(Jogo jogo, Lado lado, bool maximizando){
 }
 
 double IA::minimax(Jogo jogo, Lado lado,int profundidade, bool maximizando , int alpha, int beta){
-  if(profundidade == 0){
+  if (profundidade == 0) {
     return calcHeuristica(jogo);
   }
 
   vector<Jogada> jogadas_possiveis;
   jogo.geraTodosOsMovimentos(lado, jogadas_possiveis);
   int tam = jogadas_possiveis.size();
-  int inicial = 0;
+  int inicial = maximizando ? -10000 : 10000; // Defina o valor inicial com base no modo (maximizando ou minimizando)
   Jogo jogo_temp;
-  if(maximizando){
-    for(int i =0; i< tam; i++){
-      jogo_temp = *jogo.clonaJogo();
-      Status status = jogo_temp.fazJogada(jogadas_possiveis[i], lado);
-      if(status != COMPLETO && status != GAME_OVER){
-        continue;
-      }
-      int resultado = minimax(jogo_temp, trocaLado(lado), !maximizando, profundidade - 1, alpha, beta);
-      inicial = max(inicial, resultado);
-      alpha = max(alpha, inicial);
-      if(alpha >= beta){
-        break;
+
+  #pragma omp parallel for shared(jogadas_possiveis) private(jogo_temp)
+  for (int i = 0; i < tam; i++) {
+    jogo_temp = *jogo.clonaJogo();
+    Status status = jogo_temp.fazJogada(jogadas_possiveis[i], lado);
+
+    if (status != COMPLETO && status != GAME_OVER) {
+      continue;
+    }
+
+    int resultado = minimax(jogo_temp, trocaLado(lado), !maximizando, profundidade - 1, alpha, beta);
+
+    #pragma omp critical
+    {
+      // Atualize o valor inicial dentro da região crítica
+      if (maximizando) {
+        inicial = std::max(inicial, resultado);
+        alpha = std::max(alpha, inicial);
+      } else {
+        inicial = std::min(inicial, resultado);
+        beta = std::min(beta, inicial);
       }
     }
-  }else{
-    inicial = 1000;
-    for(int i =0; i<tam; i++){
-      jogo_temp = *jogo.clonaJogo();
-      Status status = jogo_temp.fazJogada(jogadas_possiveis[i], lado);
-      if(status != COMPLETO && status != GAME_OVER){
-        continue;
-      }
-      int resultado = minimax(jogo_temp, trocaLado(lado), !maximizando, profundidade - 1, alpha, beta);
-      inicial = min(inicial, resultado);
-      beta = min(beta, inicial);
-      if(alpha >= beta){
-        break;
-      }
+
+    // Verifique e aplique o cancelamento precocemente
+    if (alpha >= beta) {
+      #pragma omp cancel for
     }
   }
+
   return inicial;
 }
 
