@@ -4,8 +4,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include <omp.h>
+#include <mpi.h>
 #include "damas.h"
 using namespace std;
+
+// para executar o programa, basta executar o comando "g++ -fopenmp damas.cpp -o damas" e depois "./damas"
 
 void printJogada(Jogada jogada);
 
@@ -485,7 +488,8 @@ double IA::minimax(Jogo jogo, Lado lado,int profundidade, bool maximizando , int
 
     // Verifique e aplique o cancelamento precocemente
     if (alpha >= beta) {
-      #pragma omp cancel for
+      // statement used with openmp for loop
+      #pragma omp flush
     }
   }
 
@@ -512,16 +516,23 @@ void printJogada(Jogada jogada){
 }
 
 void clear(){
-  system("CLS");
+  system("clear");
 }
 
-void Jogar(){
+struct InfoJogo{
+  Jogada jogada;
+  bool vez_jogador;
+};
+
+void Jogar(int rank){
   char p;
   Lado jogador, cpu;
-  do{
-    cout << "Escolha o lado: (b)ranco ou (p)reto" << endl;
-    cin >> p;
-  }while(p != 'b' && p != 'p' && p != 'B' && p != 'P');
+  if(rank == 0){
+    do{
+      cout << "Escolha o lado: (b)ranco ou (p)reto" << endl;
+      cin >> p;
+    }while(p != 'b' && p != 'p' && p != 'B' && p != 'P');
+  }
   clear();
   if(p == 'b' || p == 'B'){
     jogador = LADO_BRANCO;
@@ -530,6 +541,10 @@ void Jogar(){
     jogador = LADO_PRETO;
     cpu = LADO_BRANCO;
   }
+  MPI_Bcast(&jogador, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&cpu, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  MPI_Barrier(MPI_COMM_WORLD);
 
   Jogador j1(jogador, "Jogador");
   IA j2(cpu, "CPU");
@@ -537,13 +552,16 @@ void Jogar(){
   bool vez_jogador = true;
   Jogo jogo;
   Status status = COMPLETO;
+  //comunicação distribuída aqui
   while(status != GAME_OVER){
-    clear();
+    // clear();
     jogo.imprimeTabuleiro();
-    if(!vez_jogador){
-      system("pause");
-    }
-    if(vez_jogador){
+    // if(!vez_jogador){
+    //   system("pause");
+    // }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if(vez_jogador && rank == 0){
       cout << "Sua vez" << endl;
       vector<Jogada> jogadas_jogador;
       jogo.geraTodosOsMovimentos(j1.getLado(), jogadas_jogador);
@@ -574,9 +592,34 @@ void Jogar(){
 
       }while(status != COMPLETO && status != GAME_OVER);
       vez_jogador = !vez_jogador;
-    }else {
-      cout << "Vez do computador" << endl;
+
+      InfoJogo info;
+      info.jogada = jogada;
+      info.vez_jogador = vez_jogador;
+
+      MPI_Send(&info, sizeof(InfoJogo), MPI_BYTE, 1, 0, MPI_COMM_WORLD);
+
+      MPI_Recv(&info, sizeof(InfoJogo), MPI_BYTE, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      Jogada jogada_computador = info.jogada;
+      vez_jogador = info.vez_jogador;
+
+      status = jogo.fazJogada(jogada_computador, j2.getLado());
+
+      MPI_Barrier(MPI_COMM_WORLD);
+
+    }else{
+      // cout << "Vez do computador" << endl;
       vector<Jogada> jogadas_computador;
+      Jogada jogada;
+      InfoJogo info;
+
+      MPI_Recv(&info, sizeof(InfoJogo), MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      jogada = info.jogada;
+      vez_jogador = info.vez_jogador;
+
+      status = j1.fazJogada(jogada, jogo);
 
       jogo.geraTodosOsMovimentos(j2.getLado(), jogadas_computador);
       if(jogadas_computador.empty()){
@@ -584,27 +627,56 @@ void Jogar(){
         cout << "Voce ganhou" << endl;
         break;
       }
-      Status status = j2.fazJogada(jogo);
+      Jogada jogada_computador = j2.inicioMinimax(jogo, j2.getLado(), true);
+      cout << "Jogada do computador: ";
+      printJogada(jogada_computador);
+      cout << endl;
+      status = jogo.fazJogada(jogada_computador, j2.getLado());
       vez_jogador = !vez_jogador;
+
+      info.jogada = jogada_computador;
+      info.vez_jogador = vez_jogador;
+
+      MPI_Send(&info, sizeof(InfoJogo), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+
+      MPI_Barrier(MPI_COMM_WORLD);
     }
   }
 
 }
 
-int main(){
+int main(int argc, char** argv) {
   srand(time(NULL));
-  clear();
-  cout << "Bem vindo ao jogo de damas" << endl;
-  cout << "Desenvolvido por: " << endl;
-  cout << "Thiago Scholl" << endl;
-  cout << "Lucas Ferreira" << endl;
+
+  MPI_Init(&argc, &argv);
+
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  if(rank == 0){
+    clear();
+    cout << "Bem vindo ao jogo de damas" << endl;
+    cout << "Desenvolvido por: " << endl;
+    cout << "Thiago Scholl" << endl;
+    cout << "Lucas Ferreira" << endl;
+  }
+
   char jogar_novamente;
-  do{
-    Jogar();
-    do{
-      cout << "Deseja jogar novamente? (s/n)" << endl;
-      cin >> jogar_novamente;
-    }while(jogar_novamente != 's' && jogar_novamente != 'n' && jogar_novamente != 'S' && jogar_novamente != 'N');
-  }while(jogar_novamente == 's' || jogar_novamente == 'S');
+  do {
+
+    Jogar(rank);  // Jogador principal
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Comunicar se alguém deseja jogar novamente
+    int jogar_novamente_local = (rank == 0) ? (jogar_novamente == 's' || jogar_novamente == 'S') : 0;
+    MPI_Bcast(&jogar_novamente_local, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    jogar_novamente = (jogar_novamente_local == 1) ? 's' : 'n';
+
+  } while (jogar_novamente == 's' || jogar_novamente == 'S');
+
+  MPI_Finalize();
   return 0;
 }
