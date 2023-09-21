@@ -36,12 +36,12 @@ class Falha {};
 
 class Jogo{
   private:
-    Peca** tabuleiro;
     int num_pecas_pretas;
     int num_pecas_brancas;
     int num_damas_pretas;
     int num_damas_brancas;
   public:
+    Peca** tabuleiro;
     int getNumPecasPretas();
     int getNumPecasBrancas();
     int getNumDamasPretas();
